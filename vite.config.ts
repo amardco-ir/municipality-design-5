@@ -4,9 +4,9 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
-const DEFAULT_API_BASE_URL = "http://192.168.10.3:6300";
-const DEFAULT_DOTNET10_API_BASE_URL = "http://192.168.10.3:6500";
-const DEFAULT_PAYMENT_API_BASE_URL = "http://172.16.1.16:6101";
+const DEFAULT_API_BASE_URL = "https://172.16.1.16:6102";
+const DEFAULT_DOTNET10_API_BASE_URL = "https://172.16.1.16:6101";
+const DEFAULT_PAYMENT_API_BASE_URL = "https://172.16.1.16:6101";
 
 const readEnvUrl = (
   env: Record<string, string>,

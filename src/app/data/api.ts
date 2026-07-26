@@ -4,9 +4,9 @@ import {
   storeAuthTokens,
 } from "../utils/authStorage";
 
-const DEFAULT_DOTNET48_API_BASE_URL = "http://192.168.10.3:6300";
-const DEFAULT_DOTNET10_API_BASE_URL = "http://192.168.10.3:6500";
-const DEFAULT_PAYMENT_API_BASE_URL = "http://172.16.1.16:6101";
+const DEFAULT_DOTNET48_API_BASE_URL = "https://172.16.1.16:6102";
+const DEFAULT_DOTNET10_API_BASE_URL = "https://172.16.1.16:6101";
+const DEFAULT_PAYMENT_API_BASE_URL = "https://172.16.1.16:6101";
 
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, "");
 
@@ -28,10 +28,7 @@ const API_BASE_URL = import.meta.env.DEV
     );
 
 const DOTNET10_API_BASE_URL = import.meta.env.DEV
-  ? firstEnvUrl(
-      import.meta.env.VITE_DEV_DOTNET10_API_BASE_URL,
-      "/dotnet10-api",
-    )
+  ? firstEnvUrl(import.meta.env.VITE_DEV_DOTNET10_API_BASE_URL, "/dotnet10-api")
   : firstEnvUrl(
       import.meta.env.VITE_DOTNET10_API_BASE_URL,
       import.meta.env.VITE_DOTNET10_API_URL,
@@ -54,7 +51,8 @@ let refreshRequest: Promise<string | null> | null = null;
 const readAccessToken = () =>
   typeof window === "undefined"
     ? null
-    : localStorage.getItem(AUTH_TOKEN_KEY)?.replace(/^Bearer\s+/i, "") ?? null;
+    : (localStorage.getItem(AUTH_TOKEN_KEY)?.replace(/^Bearer\s+/i, "") ??
+      null);
 
 async function refreshAccessToken() {
   if (typeof window === "undefined") return null;
@@ -152,9 +150,6 @@ export async function dotNet10ApiFetch(
   return fetchWithTokenRefresh(dotNet10ApiUrl(endpoint), options);
 }
 
-export async function paymentApiFetch(
-  endpoint: string,
-  options?: RequestInit,
-) {
+export async function paymentApiFetch(endpoint: string, options?: RequestInit) {
   return fetchWithTokenRefresh(paymentApiUrl(endpoint), options);
 }
