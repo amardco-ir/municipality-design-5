@@ -4,9 +4,11 @@ import {
   storeAuthTokens,
 } from "../utils/authStorage";
 
-const DEFAULT_DOTNET48_API_BASE_URL = "https://172.16.1.16:6102";
-const DEFAULT_DOTNET10_API_BASE_URL = "https://172.16.1.16:6101";
-const DEFAULT_PAYMENT_API_BASE_URL = "https://172.16.1.16:6101";
+const DEFAULT_API_BASE_URL = "https://shahrvandyar.com/api-old";
+const DEFAULT_DOTNET10_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_PAYMENT_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_RENOVATION_BILL_API_BASE_URL =
+  "https://shahrvandyar.com/api-shahrsazi";
 
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, "");
 
@@ -24,7 +26,7 @@ const API_BASE_URL = import.meta.env.DEV
   : firstEnvUrl(
       import.meta.env.VITE_API_BASE_URL,
       import.meta.env.VITE_API_URL,
-      DEFAULT_DOTNET48_API_BASE_URL,
+      DEFAULT_API_BASE_URL,
     );
 
 const DOTNET10_API_BASE_URL = import.meta.env.DEV
@@ -40,6 +42,16 @@ const PAYMENT_API_BASE_URL = import.meta.env.DEV
   : firstEnvUrl(
       import.meta.env.VITE_PAYMENT_API_BASE_URL,
       DEFAULT_PAYMENT_API_BASE_URL,
+    );
+
+const RENOVATION_BILL_API_BASE_URL = import.meta.env.DEV
+  ? firstEnvUrl(
+      import.meta.env.VITE_DEV_RENOVATION_BILL_API_BASE_URL,
+      "/renovation-bill-api",
+    )
+  : firstEnvUrl(
+      import.meta.env.VITE_RENOVATION_BILL_API_BASE_URL,
+      DEFAULT_RENOVATION_BILL_API_BASE_URL,
     );
 
 const DOTNET48_ACCEPT_HEADER = "text/plain";
@@ -152,4 +164,17 @@ export async function dotNet10ApiFetch(
 
 export async function paymentApiFetch(endpoint: string, options?: RequestInit) {
   return fetchWithTokenRefresh(paymentApiUrl(endpoint), options);
+}
+
+export async function renovationBillApiFetch(
+  endpoint: string,
+  options?: RequestInit,
+) {
+  const normalizedEndpoint = endpoint.startsWith("/")
+    ? endpoint
+    : `/${endpoint}`;
+  return fetchWithTokenRefresh(
+    `${RENOVATION_BILL_API_BASE_URL}${normalizedEndpoint}`,
+    options,
+  );
 }

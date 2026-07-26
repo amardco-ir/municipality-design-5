@@ -36,7 +36,7 @@ import {
   getApiValue,
   type ApiResponse,
 } from "../utils/apiResponseHandler";
-import { apiFetch } from "../data/api";
+import { apiFetch, renovationBillApiFetch } from "../data/api";
 import { AUTH_TOKEN_KEY } from "../utils/authStorage";
 import {
   extractPaymentIdentifiers,
@@ -84,6 +84,37 @@ interface HistoryItem {
   amount: string;
   status: string;
 }
+
+interface RenovationBill {
+  ParvandeNo: number;
+  IdMalek: number;
+  Year: number;
+  ShenaseGhabz: string;
+  ShenasePardakht: string;
+  CodeNosazi: string;
+  NameOwner: string;
+  Address: string | null;
+  Description: string;
+  DateSodor: string;
+  Price: number;
+  DelayedPrice: number;
+  PaymentStatus: boolean;
+}
+
+const billRows = (bill: RenovationBill): LabelValue[] => [
+  { label: "کد نوسازی", value: bill.CodeNosazi },
+  { label: "شماره پرونده", value: String(bill.ParvandeNo) },
+  { label: "نام مالک", value: bill.NameOwner },
+  { label: "سال", value: String(bill.Year) },
+  { label: "تاریخ صدور", value: bill.DateSodor },
+  { label: "شناسه قبض", value: bill.ShenaseGhabz },
+  { label: "شناسه پرداخت", value: bill.ShenasePardakht },
+  { label: "مبلغ", value: `${Number(bill.Price || 0).toLocaleString("fa-IR")} ریال` },
+  { label: "دیرکرد", value: `${Number(bill.DelayedPrice || 0).toLocaleString("fa-IR")} ریال` },
+  { label: "وضعیت", value: bill.PaymentStatus ? "پرداخت شده" : "پرداخت نشده" },
+  { label: "نشانی", value: bill.Address || emptyDisplay },
+  { label: "توضیحات", value: bill.Description || emptyDisplay },
+];
 
 interface ModernTollPageProps {
   isDark: boolean;
@@ -389,6 +420,8 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     useState<PaymentIdentifiers | null>(null);
   const [paymentError, setPaymentError] = useState("");
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [renovationBills, setRenovationBills] = useState<RenovationBill[]>([]);
+  const [payingBillIndex, setPayingBillIndex] = useState<number | null>(null);
   const renovationRequestIdRef = useRef(0);
   const paymentAttemptIdRef = useRef(0);
 
@@ -462,57 +495,47 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       const ownerId =
         rawOwners.map(getOwnerId).find(Boolean) || String(propertyId).trim();
 
-      const [renovationRes, recordsRes] = await Promise.all([
-        apiFetch(
-          `/api/renovation?malekId=${encodeURIComponent(ownerId)}&codeNosazi=${encodeURIComponent(normalizedCode)}`,
-          { headers },
-        ),
-        apiFetch(
-          `/api/renovation/records?malekId=${encodeURIComponent(ownerId)}&codeNosazi=${encodeURIComponent(normalizedCode)}`,
-          { headers },
-        ),
-      ]);
-
-      const renovationData: ApiResponse = renovationRes.ok
-        ? await renovationRes.json()
-        : { IsSuccess: false, IsFailure: true };
-      const recordsData: ApiResponse = recordsRes.ok
-        ? await recordsRes.json()
-        : { IsSuccess: false, IsFailure: true };
-      const renovationValue = isApiSuccess(renovationData)
-        ? getApiValue(renovationData)
-        : {};
-      const recordsValue = isApiSuccess(recordsData)
-        ? getApiValue(recordsData)
-        : [];
+      const renovationRes = await renovationBillApiFetch(
+        `/Api/PaymentAvarez/ReceiveBill?codeNosazi=${encodeURIComponent(normalizedCode)}&ownerId=${encodeURIComponent(ownerId || "1")}`,
+        { headers },
+      );
+      if (!renovationRes.ok) {
+        throw new Error("خطا در دریافت قبوض عوارض نوسازی.");
+      }
+      const renovationValue = await renovationRes.json();
+      const bills = asArray(getApiValue(renovationValue) ?? renovationValue) as RenovationBill[];
       if (requestId !== renovationRequestIdRef.current) return;
 
-      const feePairs = toModernTollPairs(renovationValue);
+      setRenovationBills(bills);
+      const feePairs = bills[0] ? billRows(bills[0]) : [];
       setFeesRight(feePairs.filter((_: unknown, i: number) => i % 2 === 0));
       setFeesLeft(feePairs.filter((_: unknown, i: number) => i % 2 === 1));
-      setPaymentIdentifiers(extractPaymentIdentifiers(renovationValue));
-
-      const rawRecords = Array.isArray(recordsValue)
-        ? recordsValue
-        : (recordsValue.items ?? recordsValue.data ?? []);
-      setHistoryItems(
-        rawRecords.map((item: any, index: number) => ({
-          id: String(item.id ?? index + 1),
-          date: item.date ?? item.tarikh ?? "—",
-          amount: String(item.amount ?? item.mablagh ?? "—"),
-          status: item.status ?? "—",
-        })),
+      setPaymentIdentifiers(
+        bills[0]
+          ? {
+              billId: bills[0].ShenaseGhabz,
+              paymentId: bills[0].ShenasePardakht,
+            }
+          : null,
       );
 
-      if (rawOwners.length === 0) {
-        rawOwners = Array.isArray(renovationValue?.owners)
-          ? renovationValue.owners
-          : renovationValue?.owner
-            ? [renovationValue.owner]
-            : [];
-      }
+      setHistoryItems(
+        bills.map((item, index) => ({
+          id: String(item.ParvandeNo ?? index + 1),
+          date: item.DateSodor ?? "—",
+          amount: `${Number(item.Price || 0).toLocaleString("fa-IR")} ریال`,
+          status: item.PaymentStatus ? "پرداخت شده" : "پرداخت نشده",
+        })),
+      );
       setOwners(rawOwners.map(mapOwner));
-    } catch {}
+    } catch (loadError) {
+      if (requestId !== renovationRequestIdRef.current) return;
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "خطا در دریافت اطلاعات نوسازی.",
+      );
+    }
   };
 
   // هندلر کلیک روی یک ملک از لیست زیرمجموعه
@@ -524,6 +547,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setOwners([]);
     setFeesRight([]);
     setFeesLeft([]);
+    setRenovationBills([]);
     setHistoryItems([]);
     setPaymentIdentifiers(null);
     setPaymentError("");
@@ -640,6 +664,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setOwners([]);
     setFeesRight([]);
     setFeesLeft([]);
+    setRenovationBills([]);
     setHistoryItems([]);
     setPaymentIdentifiers(null);
     setPaymentError("");
@@ -650,13 +675,19 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     }
   };
 
-  const handlePayment = async () => {
+  const handlePayment = async (bill?: RenovationBill, billIndex = 0) => {
     if (isPaymentLoading) return;
     if (!token) {
       setPaymentError("برای پرداخت باید وارد حساب کاربری شوید.");
       return;
     }
-    if (!paymentIdentifiers) {
+    const identifiers = bill
+      ? {
+          billId: bill.ShenaseGhabz,
+          paymentId: bill.ShenasePardakht,
+        }
+      : paymentIdentifiers;
+    if (!identifiers) {
       setPaymentError(
         "شناسه قبض یا شناسه پرداخت در اطلاعات نوسازی موجود نیست؛ ابتدا پرونده را جستجو کنید.",
       );
@@ -665,10 +696,11 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
 
     setPaymentError("");
     setIsPaymentLoading(true);
+    setPayingBillIndex(billIndex);
     const attemptId = ++paymentAttemptIdRef.current;
     try {
       const { refId, redirectUrl } = await requestPaymentToken(
-        paymentIdentifiers,
+        identifiers,
         token,
       );
       if (attemptId !== paymentAttemptIdRef.current) return;
@@ -681,6 +713,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
           : "شروع عملیات پرداخت انجام نشد.",
       );
       setIsPaymentLoading(false);
+      setPayingBillIndex(null);
     }
   };
 
@@ -697,7 +730,10 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const currentFeeRows = mergePairs(feesRight, feesLeft);
   const hasCurrentFees = currentFeeRows.length > 0;
   const canStartPayment = Boolean(
-    token && paymentIdentifiers && !isPaymentLoading,
+    token &&
+      paymentIdentifiers &&
+      !isPaymentLoading &&
+      !renovationBills[0]?.PaymentStatus,
   );
   const paymentHint = !token
     ? "برای پرداخت، ابتدا وارد حساب کاربری شوید."
@@ -980,6 +1016,14 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
               </div>
             </div>
             <div className="p-4">
+              {renovationBills[0] && (
+                <div className="mb-3 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-xs">
+                  <span className="font-bold text-foreground"> نوسازی قدیم</span>
+                  <bdi dir="ltr" className="text-muted-foreground">
+                    {renovationBills[0].CodeNosazi}
+                  </bdi>
+                </div>
+              )}
               <div className="grid grid-cols-1 gap-x-8 gap-y-0 md:grid-cols-2">
                 <div className="space-y-0">
                   {(feesRight.length
@@ -1048,7 +1092,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
 
                   <button
                     type="button"
-                    onClick={handlePayment}
+                    onClick={() => handlePayment(renovationBills[0], 0)}
                     disabled={!canStartPayment}
                     aria-busy={isPaymentLoading}
                     className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted-foreground/35 disabled:shadow-none sm:w-auto"
@@ -1058,7 +1102,11 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                     ) : (
                       <CreditCard className="h-5 w-5" />
                     )}
-                    {isPaymentLoading ? "در حال اتصال به درگاه..." : "پرداخت عوارض"}
+                    {renovationBills[0]?.PaymentStatus
+                      ? "پرداخت شده"
+                      : isPaymentLoading && payingBillIndex === 0
+                        ? "در حال اتصال به درگاه..."
+                        : "پرداخت عوارض"}
                   </button>
                 </div>
 
@@ -1071,6 +1119,91 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                   </div>
                 )}
               </div>
+
+              {renovationBills.slice(1).map((bill, billOffset) => {
+                const billIndex = billOffset + 1;
+                const rows = billRows(bill);
+                const rightRows = rows.filter((_, index) => index % 2 === 0);
+                const leftRows = rows.filter((_, index) => index % 2 === 1);
+                const isThisBillLoading =
+                  isPaymentLoading && payingBillIndex === billIndex;
+
+                return (
+                  <div
+                    key={`${bill.ShenaseGhabz}-${bill.ShenasePardakht}`}
+                    className="mt-6 border-t border-border/70 pt-6"
+                  >
+                    <div className="mb-3 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-xs">
+                      <span className="font-bold text-foreground">
+                        {billIndex === 1
+                          ? " نوسازی جدید"
+                          : `قبض عوارض شماره ${billIndex + 1}`}
+                      </span>
+                      <bdi dir="ltr" className="text-muted-foreground">
+                        {bill.CodeNosazi}
+                      </bdi>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
+                      {[rightRows, leftRows].map((column, columnIndex) => (
+                        <div key={columnIndex}>
+                          {column.map((field) => (
+                            <div
+                              key={field.label}
+                              className="flex justify-between gap-4 border-b border-border/30 py-2.5 text-xs md:text-sm"
+                            >
+                              <span className="shrink-0 text-muted-foreground">
+                                {field.label}:
+                              </span>
+                              <bdi
+                                dir="auto"
+                                className="break-all text-left font-medium text-foreground/80"
+                              >
+                                {field.value}
+                              </bdi>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-5 flex flex-col gap-4 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-xs leading-6 text-muted-foreground">
+                        <div>
+                          شناسه قبض: <bdi dir="ltr">{bill.ShenaseGhabz}</bdi>
+                        </div>
+                        <div>
+                          شناسه پرداخت:{" "}
+                          <bdi dir="ltr">{bill.ShenasePardakht}</bdi>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handlePayment(bill, billIndex)}
+                        disabled={
+                          isPaymentLoading ||
+                          bill.PaymentStatus ||
+                          !bill.ShenaseGhabz ||
+                          !bill.ShenasePardakht
+                        }
+                        aria-busy={isThisBillLoading}
+                        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-muted-foreground/35 sm:w-auto"
+                      >
+                        {isThisBillLoading ? (
+                          <LoaderCircle className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <CreditCard className="h-5 w-5" />
+                        )}
+                        {bill.PaymentStatus
+                          ? "پرداخت شده"
+                          : isThisBillLoading
+                            ? "در حال اتصال..."
+                            : "پرداخت این قبض"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </motion.article>
 

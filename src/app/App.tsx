@@ -217,6 +217,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/payment-result" element={<PaymentResultPage />} />
           <Route
             path="*"
             element={
@@ -296,6 +297,11 @@ const PropertyRequestDetails = lazy(() =>
 const ModernTollPage = lazy(() =>
   import("./pages/ModernTollPage").then((module) => ({
     default: module.ModernTollPage,
+  })),
+);
+const PaymentResultPage = lazy(() =>
+  import("./pages/PaymentResultPage").then((module) => ({
+    default: module.PaymentResultPage,
   })),
 );
 const AdminPanel = lazy(() => import("./pages/Adminpanel"));

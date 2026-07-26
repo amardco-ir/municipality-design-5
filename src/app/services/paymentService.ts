@@ -30,8 +30,24 @@ type PaymentApiEnvelope<T = unknown> = {
 };
 
 const PAYMENT_TOKEN_ENDPOINT = "/api/payment/token";
-const DEFAULT_PAYMENT_GATEWAY_URL = "http://asan.shaparak.ir";
+const DEFAULT_PAYMENT_GATEWAY_URL = "https://asan.shaparak.ir";
 const PAYMENT_GATEWAY_HOSTNAME = "asan.shaparak.ir";
+
+const normalizePaymentGatewayUrl = (value: string) => {
+  const gatewayUrl = new URL(value);
+
+  // The payment API currently returns the legacy HTTP URL. Submitting an HTTPS
+  // page to it triggers the browser's insecure-form warning.
+  if (
+    gatewayUrl.hostname.toLocaleLowerCase("en-US") ===
+      PAYMENT_GATEWAY_HOSTNAME &&
+    gatewayUrl.protocol === "http:"
+  ) {
+    gatewayUrl.protocol = "https:";
+  }
+
+  return gatewayUrl;
+};
 
 const paymentIdAliases = new Set([
   "paymentid",
@@ -283,12 +299,12 @@ export function redirectToPaymentGateway(refId: string, redirectUrl: string) {
 
   let gatewayUrl: URL;
   try {
-    gatewayUrl = new URL(redirectUrl);
+    gatewayUrl = normalizePaymentGatewayUrl(redirectUrl);
   } catch {
     throw new Error("آدرس درگاه پرداخت معتبر نیست.");
   }
   if (
-    !["http:", "https:"].includes(gatewayUrl.protocol) ||
+    gatewayUrl.protocol !== "https:" ||
     gatewayUrl.hostname.toLocaleLowerCase("en-US") !== PAYMENT_GATEWAY_HOSTNAME ||
     gatewayUrl.port !== "" ||
     gatewayUrl.username ||

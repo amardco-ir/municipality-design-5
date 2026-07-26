@@ -4,9 +4,11 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
-const DEFAULT_API_BASE_URL = "https://172.16.1.16:6102";
-const DEFAULT_DOTNET10_API_BASE_URL = "https://172.16.1.16:6101";
-const DEFAULT_PAYMENT_API_BASE_URL = "https://172.16.1.16:6101";
+const DEFAULT_API_BASE_URL = "https://shahrvandyar.com/api-old";
+const DEFAULT_DOTNET10_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_PAYMENT_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_RENOVATION_BILL_API_BASE_URL =
+  "https://shahrvandyar.com/api-shahrsazi";
 
 const readEnvUrl = (
   env: Record<string, string>,
@@ -64,6 +66,14 @@ export default defineConfig(({ mode }) => {
     env,
     ["VITE_PAYMENT_API_PROXY_TARGET", "VITE_PAYMENT_API_BASE_URL"],
     DEFAULT_PAYMENT_API_BASE_URL,
+  );
+  const renovationBillApiProxyTarget = readEnvUrl(
+    env,
+    [
+      "VITE_RENOVATION_BILL_API_PROXY_TARGET",
+      "VITE_RENOVATION_BILL_API_BASE_URL",
+    ],
+    DEFAULT_RENOVATION_BILL_API_BASE_URL,
   );
 
   return {
@@ -134,6 +144,7 @@ export default defineConfig(({ mode }) => {
             /^\/api(?:\/|$)/,
             /^\/dotnet10-api(?:\/|$)/,
             /^\/payment-api(?:\/|$)/,
+            /^\/renovation-bill-api(?:\/|$)/,
           ],
           runtimeCaching: [
             {
@@ -178,6 +189,12 @@ export default defineConfig(({ mode }) => {
       port: 5173,
 
       proxy: {
+        "/renovation-bill-api": {
+          target: renovationBillApiProxyTarget,
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/renovation-bill-api/, ""),
+        },
         "/payment-api": {
           target: paymentApiProxyTarget,
           changeOrigin: true,
