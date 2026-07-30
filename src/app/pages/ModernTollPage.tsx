@@ -420,10 +420,12 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     useState<PaymentIdentifiers | null>(null);
   const [paymentError, setPaymentError] = useState("");
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [isRenovationLoading, setIsRenovationLoading] = useState(true);
   const [renovationBills, setRenovationBills] = useState<RenovationBill[]>([]);
   const [payingBillIndex, setPayingBillIndex] = useState<number | null>(null);
   const renovationRequestIdRef = useRef(0);
   const paymentAttemptIdRef = useRef(0);
+  const propertyCodeSetRef = useRef<Set<string>>(new Set());
 
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
 
@@ -457,6 +459,13 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     `${searchInputs.region}-${searchInputs.neighborhood}-${searchInputs.block}-${searchInputs.property}-${searchInputs.building}-${searchInputs.apartment}-${searchInputs.guild}`,
   );
 
+  const getComparableCode = (code: string | null | undefined) =>
+    normalizeRenewalCode(code);
+
+  const hasPaymentIdentifiers = (bill: RenovationBill) =>
+    String(bill.ShenaseGhabz ?? "").trim() !== "" &&
+    String(bill.ShenasePardakht ?? "").trim() !== "";
+
   const handleOpenHelp = (title: string, description: string) => {
     setModalContent({ title, description });
     setIsModalOpen(true);
@@ -468,12 +477,27 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   };
 
   const loadRenovationData = async (propertyId: string, code: string) => {
-    if (!token) return;
+    if (!token) {
+      setIsRenovationLoading(false);
+      return;
+    }
     const requestId = ++renovationRequestIdRef.current;
+    setIsRenovationLoading(true);
     setPaymentIdentifiers(null);
     setPaymentError("");
     try {
-      const normalizedCode = normalizeCode(code);
+      const normalizedCode = normalizeCode(normalizeRenewalCode(code));
+      const comparableRequestedCode = getComparableCode(normalizedCode);
+
+      if (
+        !comparableRequestedCode ||
+        !propertyCodeSetRef.current.has(comparableRequestedCode)
+      ) {
+        throw new Error(
+          "کد نوسازی واردشده در پرونده‌های زیرمجموعه شما وجود ندارد.",
+        );
+      }
+
       const headers = {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
@@ -503,8 +527,19 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
         throw new Error("خطا در دریافت قبوض عوارض نوسازی.");
       }
       const renovationValue = await renovationRes.json();
-      const bills = asArray(getApiValue(renovationValue) ?? renovationValue) as RenovationBill[];
+      const receivedBills = asArray(
+        getApiValue(renovationValue) ?? renovationValue,
+      ) as RenovationBill[];
       if (requestId !== renovationRequestIdRef.current) return;
+
+      const bills = receivedBills.filter((bill) => {
+        const responseCode = getComparableCode(bill.CodeNosazi);
+        return (
+          hasPaymentIdentifiers(bill) &&
+          responseCode === comparableRequestedCode &&
+          propertyCodeSetRef.current.has(responseCode)
+        );
+      });
 
       setRenovationBills(bills);
       const feePairs = bills[0] ? billRows(bills[0]) : [];
@@ -535,6 +570,15 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
           ? loadError.message
           : "خطا در دریافت اطلاعات نوسازی.",
       );
+      setRenovationBills([]);
+      setFeesRight([]);
+      setFeesLeft([]);
+      setHistoryItems([]);
+      setPaymentIdentifiers(null);
+    } finally {
+      if (requestId === renovationRequestIdRef.current) {
+        setIsRenovationLoading(false);
+      }
     }
   };
 
@@ -552,6 +596,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setPaymentIdentifiers(null);
     setPaymentError("");
     setIsPaymentLoading(false);
+    setIsRenovationLoading(false);
     setError("");
   };
 
@@ -593,11 +638,17 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   useEffect(() => {
     const loadProperties = async () => {
       const nationalCode = localStorage.getItem("user-national-code");
-      if (!token || !nationalCode) return;
+      if (!token || !nationalCode) {
+        setIsRenovationLoading(false);
+        return;
+      }
       try {
         const data = await fetchCurrentUserPropertyFiles(token);
 
-        if (!isApiSuccess(data)) return;
+        if (!isApiSuccess(data)) {
+          setIsRenovationLoading(false);
+          return;
+        }
 
         const rawList = getPropertyFileList(data);
         const mapped: LocalPropertyItem[] = flattenApiPropertyFiles(rawList).map(
@@ -615,6 +666,11 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
             };
           },
         );
+        propertyCodeSetRef.current = new Set(
+          mapped
+            .map((item) => getComparableCode(item.fullCode))
+            .filter(Boolean),
+        );
         setPropertyItems(mapped);
 
         // انتخاب خودکار آیتم اول - تلاش برای بازیابی ملک انتخاب شده از localStorage
@@ -629,19 +685,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
             selectedProp = mapped.find(item => 
               normalizeRenewalCode(item.fullCode) === normalizedStoredCode
             ) ?? null;
-
-            if (!selectedProp) {
-              const cleanedStoredCode = normalizeCode(storedFullCode);
-              selectedProp = {
-                id:
-                  localStorage.getItem("municipality-selected-property-id") ??
-                  cleanedStoredCode,
-                fullCode: cleanedStoredCode,
-                ownerName: "—",
-                description: storedFullCode,
-                codes: splitCode(cleanedStoredCode),
-              };
-            }
           }
           
           // If no stored property found, use the first one
@@ -649,15 +692,19 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
           setSelectedProperty(propertyToSelect);
           setSearchInputs(propertyToSelect.codes);
           void loadRenovationData(propertyToSelect.id, propertyToSelect.fullCode);
+        } else {
+          setIsRenovationLoading(false);
         }
-      } catch {}
+      } catch {
+        setError("خطا در دریافت پرونده‌های زیرمجموعه.");
+        setIsRenovationLoading(false);
+      }
     };
     void loadProperties();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleSearch = async () => {
-    if (!selectedProperty) return;
     paymentAttemptIdRef.current += 1;
     setIsPaymentLoading(false);
     setError("");
@@ -668,8 +715,23 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setHistoryItems([]);
     setPaymentIdentifiers(null);
     setPaymentError("");
+
+    const comparableSearchCode = getComparableCode(codeNosazi);
+    const matchedProperty = propertyItems.find(
+      (item) => getComparableCode(item.fullCode) === comparableSearchCode,
+    );
+
+    if (!matchedProperty) {
+      renovationRequestIdRef.current += 1;
+      setSelectedProperty(null);
+      setIsRenovationLoading(false);
+      setError("کد نوسازی واردشده در پرونده‌های زیرمجموعه شما وجود ندارد.");
+      return;
+    }
+
+    setSelectedProperty(matchedProperty);
     try {
-      await loadRenovationData(selectedProperty.id, codeNosazi);
+      await loadRenovationData(matchedProperty.id, codeNosazi);
     } catch {
       setError("خطا در دریافت اطلاعات نوسازی.");
     }
@@ -1016,16 +1078,26 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
               </div>
             </div>
             <div className="p-4">
-              {renovationBills[0] && (
-                <div className="mb-3 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-xs">
-                  <span className="font-bold text-foreground"> نوسازی قدیم</span>
-                  <bdi dir="ltr" className="text-muted-foreground">
-                    {renovationBills[0].CodeNosazi}
-                  </bdi>
+              {isRenovationLoading ? (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border border-primary/20 bg-[var(--primary-soft)] text-primary"
+                >
+                  <LoaderCircle className="h-9 w-9 animate-spin" />
+                  <span className="text-xs font-bold md:text-sm">
+                    در حال دریافت اطلاعات عوارض نوسازی...
+                  </span>
                 </div>
-              )}
-              <div className="grid grid-cols-1 gap-x-8 gap-y-0 md:grid-cols-2">
-                <div className="space-y-0">
+              ) : renovationBills.length === 0 ? (
+                <div className="flex min-h-40 items-center justify-center rounded-2xl border border-border/70 bg-muted/20 px-4 text-center text-xs text-muted-foreground md:text-sm">
+                  {error ||
+                    "قبض قابل نمایشی برای کد نوسازی انتخاب‌شده دریافت نشد."}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-0 md:grid-cols-2">
+                    <div className="space-y-0">
                   {(feesRight.length
                     ? feesRight
                     : Array(9).fill({ label: "—", value: "—" })
@@ -1042,8 +1114,8 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                       </span>
                     </div>
                   ))}
-                </div>
-                <div className="space-y-0">
+                    </div>
+                    <div className="space-y-0">
                   {(feesLeft.length
                     ? feesLeft
                     : Array(9).fill({ label: "—", value: "—" })
@@ -1060,8 +1132,8 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                       </span>
                     </div>
                   ))}
-                </div>
-              </div>
+                    </div>
+                  </div>
 
               <div className="mt-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 sm:p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1133,17 +1205,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                     key={`${bill.ShenaseGhabz}-${bill.ShenasePardakht}`}
                     className="mt-6 border-t border-border/70 pt-6"
                   >
-                    <div className="mb-3 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-xs">
-                      <span className="font-bold text-foreground">
-                        {billIndex === 1
-                          ? " نوسازی جدید"
-                          : `قبض عوارض شماره ${billIndex + 1}`}
-                      </span>
-                      <bdi dir="ltr" className="text-muted-foreground">
-                        {bill.CodeNosazi}
-                      </bdi>
-                    </div>
-
                     <div className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
                       {[rightRows, leftRows].map((column, columnIndex) => (
                         <div key={columnIndex}>
@@ -1204,6 +1265,8 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                   </div>
                 );
               })}
+                  </>
+              )}
             </div>
           </motion.article>
 

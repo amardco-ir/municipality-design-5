@@ -1,1 +1,0 @@
-import{ch as s,eB as i,bf as p}from"./Map-DCSuDt7-.js";import{p as c}from"./queryTopFeatures-CU9hoZd5.js";import"./index-ggXdJ0tG.js";import"./apiResponseHandler-CwLUzl89.js";async function y(r,o,t,a){const e=s(r),m={...a},{data:f}=await c(e,i.from(o),t,m);return p.fromJSON(f)}export{y as executeTopFeaturesQuery};

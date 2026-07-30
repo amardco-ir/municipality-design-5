@@ -48,7 +48,12 @@ function RouteScrollManager() {
 
 function ConditionalFooter() {
   const location = useLocation();
-  if (location.pathname === "/admin") return null;
+  if (
+    location.pathname === "/admin" ||
+    location.pathname === "/payment-result"
+  ) {
+    return null;
+  }
   return <Footer />;
 }
 

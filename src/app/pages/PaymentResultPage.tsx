@@ -1,221 +1,79 @@
-import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
   Home,
-  LoaderCircle,
   ReceiptText,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
-import { paymentApiFetch } from "../data/api";
 
-type PaymentResultStatus = "loading" | "success" | "error";
-
-const firstParam = (
-  params: URLSearchParams,
-  ...names: string[]
-) => {
-  for (const name of names) {
-    const value = params.get(name)?.trim();
-    if (value) return value;
+const isSuccessfulPayment = (params: URLSearchParams) => {
+  for (const [name, value] of params.entries()) {
+    if (
+      name.toLocaleLowerCase("en-US") === "success" &&
+      value.trim().toLocaleLowerCase("en-US") === "true"
+    ) {
+      return true;
+    }
   }
-  return "";
-};
 
-const readResponse = async (response: Response) => {
-  const text = await response.text().catch(() => "");
-  if (!text) return null;
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-};
-
-const getResultMessage = (payload: any, fallback: string) => {
-  if (typeof payload === "string" && payload.trim()) return payload;
-  return (
-    payload?.error?.name ||
-    payload?.error?.description ||
-    payload?.Error?.Name ||
-    payload?.Error?.Description ||
-    payload?.message ||
-    payload?.Message ||
-    fallback
-  );
+  return false;
 };
 
 export function PaymentResultPage() {
   const [searchParams] = useSearchParams();
-  const startedRef = useRef(false);
-  const [status, setStatus] = useState<PaymentResultStatus>("loading");
-  const [message, setMessage] = useState("در حال بررسی نتیجه پرداخت...");
-
-  const localInvoiceId = firstParam(
-    searchParams,
-    "localInvoiceId",
-    "LocalInvoiceId",
-  );
-  const payGateTranId = firstParam(
-    searchParams,
-    "PayGateTranId",
-    "payGateTranId",
-  );
-  const merchantShaparakFee = firstParam(
-    searchParams,
-    "MerchantShaparakFee",
-    "merchantShaparakFee",
-  );
-  const returningParams = firstParam(
-    searchParams,
-    "ReturningParams",
-    "returningParams",
-  );
-
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-
-    if (!payGateTranId || !merchantShaparakFee || !returningParams) {
-      setStatus("error");
-      setMessage("اطلاعات بازگشتی درگاه کامل نیست و امکان تأیید پرداخت وجود ندارد.");
-      return;
-    }
-
-    const verifyPayment = async () => {
-      const query = new URLSearchParams({
-        PayGateTranId: payGateTranId,
-        MerchantShaparakFee: merchantShaparakFee,
-        ReturningParams: returningParams,
-      });
-      if (localInvoiceId) query.set("localInvoiceId", localInvoiceId);
-
-      try {
-        const response = await paymentApiFetch(
-          `/api/payment/pay?${query.toString()}`,
-          {
-            method: "GET",
-            headers: { Accept: "*/*" },
-            cache: "no-store",
-          },
-        );
-        const payload = await readResponse(response);
-        const isSuccess =
-          response.ok &&
-          payload?.isSuccess !== false &&
-          payload?.IsSuccess !== false &&
-          payload?.isFailure !== true &&
-          payload?.IsFailure !== true;
-
-        if (!isSuccess) {
-          throw new Error(
-            getResultMessage(payload, "تأیید پرداخت توسط سرویس انجام نشد."),
-          );
-        }
-
-        setStatus("success");
-        setMessage(
-          getResultMessage(payload, "پرداخت شما با موفقیت تأیید و ثبت شد."),
-        );
-      } catch (error) {
-        setStatus("error");
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "ارتباط با سرویس تأیید پرداخت برقرار نشد.",
-        );
-      }
-    };
-
-    void verifyPayment();
-  }, [
-    localInvoiceId,
-    merchantShaparakFee,
-    payGateTranId,
-    returningParams,
-  ]);
-
-  const isLoading = status === "loading";
-  const isSuccess = status === "success";
+  const isSuccess = isSuccessfulPayment(searchParams);
 
   return (
     <main
       dir="rtl"
-      className="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground"
+      className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-[#071712] px-4 py-10 text-[#f4fbf8]"
     >
-      <section className="w-full max-w-lg overflow-hidden rounded-lg border border-border bg-card shadow-xl">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(33,118,99,0.12),transparent_42%)]"
+      />
+
+      <section className="relative w-full max-w-[520px] overflow-hidden rounded-2xl border border-[#24483f] bg-[#0c211b] shadow-[0_24px_70px_rgba(0,0,0,0.32)]">
         <div
           className={`h-1.5 w-full ${
-            isLoading
-              ? "bg-primary"
-              : isSuccess
-                ? "bg-emerald-600"
-                : "bg-destructive"
+            isSuccess ? "bg-[#35c4b2]" : "bg-[#e68189]"
           }`}
         />
-        <div className="p-6 text-center sm:p-8">
+        <div className="px-6 py-8 text-center sm:px-8 sm:py-9">
           <div
-            className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${
-              isLoading
-                ? "bg-primary/10 text-primary"
-                : isSuccess
-                  ? "bg-emerald-500/10 text-emerald-600"
-                  : "bg-destructive/10 text-destructive"
+            className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full border ${
+              isSuccess
+                ? "border-[#35c4b2]/20 bg-[#35c4b2]/10 text-[#46d5c2]"
+                : "border-[#e68189]/15 bg-[#e68189]/10 text-[#e68189]"
             }`}
           >
-            {isLoading ? (
-              <LoaderCircle className="h-8 w-8 animate-spin" />
-            ) : isSuccess ? (
+            {isSuccess ? (
               <CheckCircle2 className="h-9 w-9" />
             ) : (
               <AlertCircle className="h-9 w-9" />
             )}
           </div>
 
-          <h1 className="mt-5 text-xl font-bold">
-            {isLoading
-              ? "بررسی پرداخت"
-              : isSuccess
-                ? "پرداخت موفق"
-                : "پرداخت تأیید نشد"}
+          <h1 className="mt-5 text-xl font-bold text-white">
+            {isSuccess ? "پرداخت با موفقیت تأیید شد" : "پرداخت انجام نشد"}
           </h1>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            {message}
+          <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[#9ab5ad]">
+            {isSuccess
+              ? "پرداخت شما با موفقیت انجام و در سامانه ثبت شد."
+              : "پرداخت شما انجام نشد. لطفاً دوباره تلاش کنید."}
           </p>
-
-          {(localInvoiceId || payGateTranId) && (
-            <div className="mt-6 divide-y divide-border rounded-lg border border-border text-xs">
-              {localInvoiceId && (
-                <div className="flex items-center justify-between gap-4 px-4 py-3">
-                  <span className="text-muted-foreground">شماره صورتحساب</span>
-                  <bdi dir="ltr" className="font-semibold">
-                    {localInvoiceId}
-                  </bdi>
-                </div>
-              )}
-              {payGateTranId && (
-                <div className="flex items-center justify-between gap-4 px-4 py-3">
-                  <span className="text-muted-foreground">شناسه تراکنش درگاه</span>
-                  <bdi dir="ltr" className="font-semibold">
-                    {payGateTranId}
-                  </bdi>
-                </div>
-              )}
-            </div>
-          )}
 
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link
               to="/"
-              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#36c3b2] px-5 text-sm font-bold text-[#06201a] transition-colors hover:bg-[#4bd3c2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78e1d4]"
             >
               <Home className="h-4 w-4" />
               ورود به صفحه اصلی
             </Link>
             <Link
               to="/modern-toll"
-              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-border px-5 text-sm font-bold transition-colors hover:bg-muted"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#315248] bg-transparent px-5 text-sm font-bold text-[#eaf4f1] transition-colors hover:bg-[#142e27] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#537b70]"
             >
               <ReceiptText className="h-4 w-4" />
               مشاهده عوارض
