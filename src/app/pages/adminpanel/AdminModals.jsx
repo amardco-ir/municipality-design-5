@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
+  CalendarDays,
   CheckCircle2,
   ChevronDown,
   Edit3,
@@ -13,6 +14,10 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import {
+  getCurrentJalaliDateString,
+  PersianDatePicker,
+} from "../sabtdarkhast/PersianDatePicker";
 
 const inputClassName =
   "w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/10";
@@ -141,7 +146,9 @@ function RolePickerModal({
               <ShieldCheck className="h-4.5 w-4.5" />
             </span>
             <div>
-              <h4 className="text-sm font-bold text-foreground">انتخاب نقش کاربر</h4>
+              <h4 className="text-sm font-bold text-foreground">
+                انتخاب نقش کاربر
+              </h4>
               <p className="text-[11px] text-muted-foreground">
                 دسترسی مناسب را انتخاب کنید
               </p>
@@ -262,7 +269,9 @@ function RoleField({
         <span className="min-w-0 flex-1">
           <span
             className={`block truncate ${
-              selectedRole ? "font-semibold text-foreground" : "text-muted-foreground"
+              selectedRole
+                ? "font-semibold text-foreground"
+                : "text-muted-foreground"
             }`}
           >
             {selectedRole?.name ||
@@ -380,8 +389,9 @@ export function AddUserModal({
     email: "",
     address: "",
     picture: null,
-    birthDay: "",
+    birthDay: getCurrentJalaliDateString(),
   });
+  const [isBirthDateOpen, setIsBirthDateOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -487,15 +497,37 @@ export function AddUserModal({
             dir="ltr"
             required={false}
           />
-          <Field
-            label="تاریخ تولد"
-            name="birthDay"
-            form={form}
-            setForm={setForm}
-            placeholder="1400/01/01"
-            dir="ltr"
-            required={false}
-          />
+          <div className="relative space-y-1">
+            <label className="text-[11px] font-medium text-muted-foreground">
+              تاریخ تولد
+            </label>
+            <button
+              type="button"
+              dir="ltr"
+              onClick={() => setIsBirthDateOpen((open) => !open)}
+              disabled={loading}
+              className="flex w-full items-center justify-between rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+            >
+              <span>{form.birthDay}</span>
+              <CalendarDays className="h-4 w-4 text-primary" />
+            </button>
+            <AnimatePresence>
+              {isBirthDateOpen && (
+                <div className="relative z-20 pt-1 sm:absolute sm:inset-x-0 sm:top-full">
+                  <PersianDatePicker
+                    value={form.birthDay}
+                    onChange={(value) =>
+                      setForm((current) => ({
+                        ...current,
+                        birthDay: value,
+                      }))
+                    }
+                    onClose={() => setIsBirthDateOpen(false)}
+                  />
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
           <div className="sm:col-span-2">
             <Field
               label="آدرس"
@@ -562,8 +594,9 @@ export function EditUserModal({
     email: user.email || "",
     address: user.address || "",
     picture: null,
-    birthDay: user.birthDay || "",
+    birthDay: user.birthDay || getCurrentJalaliDateString(),
   });
+  const [isBirthDateOpen, setIsBirthDateOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -657,15 +690,37 @@ export function EditUserModal({
             dir="ltr"
             required={false}
           />
-          <Field
-            label="تاریخ تولد"
-            name="birthDay"
-            form={form}
-            setForm={setForm}
-            placeholder="1400/01/01"
-            dir="ltr"
-            required={false}
-          />
+          <div className="relative space-y-1">
+            <label className="text-[11px] font-medium text-muted-foreground">
+              تاریخ تولد
+            </label>
+            <button
+              type="button"
+              dir="ltr"
+              onClick={() => setIsBirthDateOpen((open) => !open)}
+              disabled={loading}
+              className="flex w-full items-center justify-between rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+            >
+              <span>{form.birthDay}</span>
+              <CalendarDays className="h-4 w-4 text-primary" />
+            </button>
+            <AnimatePresence>
+              {isBirthDateOpen && (
+                <div className="relative z-20 pt-1 sm:absolute sm:inset-x-0 sm:top-full">
+                  <PersianDatePicker
+                    value={form.birthDay}
+                    onChange={(value) =>
+                      setForm((current) => ({
+                        ...current,
+                        birthDay: value,
+                      }))
+                    }
+                    onClose={() => setIsBirthDateOpen(false)}
+                  />
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
           <div className="sm:col-span-2">
             <Field
               label="آدرس"
@@ -797,7 +852,9 @@ export function DeleteConfirmModal({ user, onClose, onConfirm }) {
         </strong>{" "}
         اطمینان دارید؟ این عمل قابل بازگشت نیست.
       </p>
-      {error && <p className="mb-3 text-center text-xs text-destructive">{error}</p>}
+      {error && (
+        <p className="mb-3 text-center text-xs text-destructive">{error}</p>
+      )}
       <div className="flex gap-2">
         <button
           type="button"

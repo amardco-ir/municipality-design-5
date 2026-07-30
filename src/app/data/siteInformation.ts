@@ -161,13 +161,39 @@ export async function fetchHeaderInformation(
 export async function fetchFooterInformation(
   signal?: AbortSignal,
 ): Promise<SiteInformation> {
-  const data = await requestInformation<RawSiteInformation>(
-    FOOTER_ENDPOINT,
-    { method: "GET", signal },
-    "دریافت اطلاعات فوتر ناموفق بود.",
-  );
+  try {
+    const data = await requestInformation<RawSiteInformation>(
+      FOOTER_ENDPOINT,
+      { method: "GET", signal },
+      "دریافت اطلاعات فوتر ناموفق بود.",
+    );
 
-  return normalizeSiteInformation(unwrapValue(data));
+    const normalized = normalizeSiteInformation(unwrapValue(data));
+
+    // If enamad is empty, try to fetch from admin endpoint
+    if (!normalized.enamad) {
+      try {
+        const adminData = await requestInformation<RawSiteInformation>(
+          ADMIN_INFORMATION_ENDPOINT,
+          { method: "GET", signal },
+          "",
+        );
+        const adminNormalized = normalizeSiteInformation(
+          unwrapValue(adminData),
+        );
+        if (adminNormalized.enamad) {
+          normalized.enamad = adminNormalized.enamad;
+        }
+      } catch {
+        // Silently fail if admin endpoint doesn't work
+      }
+    }
+
+    return normalized;
+  } catch (error) {
+    console.error("Footer information fetch error:", error);
+    return emptySiteInformation;
+  }
 }
 
 export async function fetchAdminInformation(
@@ -214,10 +240,23 @@ export function resolveInformationImageSrc(
 ) {
   const imageValue = value?.trim();
   if (!imageValue) return fallback;
-  if (/^(https?:)?\/\//i.test(imageValue) || imageValue.startsWith("data:")) {
+
+  // If it's already a data URI, return as-is
+  if (imageValue.startsWith("data:")) {
     return imageValue;
   }
 
+  // If it's an absolute URL (http:// or https://), return as-is
+  if (/^https?:\/\//i.test(imageValue)) {
+    return imageValue;
+  }
+
+  // If it's a protocol-relative URL (//)
+  if (imageValue.startsWith("//")) {
+    return imageValue;
+  }
+
+  // If it looks like base64
   const compactBase64 = imageValue.replace(/^data:image\/[^;]+;base64,/i, "");
   const isLikelyBase64Image =
     compactBase64.length > 80 && /^[A-Za-z0-9+/=]+$/.test(compactBase64);
@@ -237,6 +276,7 @@ export function resolveInformationImageSrc(
     return `data:${mimeType};base64,${compactBase64}`;
   }
 
+  // If it's a relative path in public folder
   const normalizedPath = imageValue.replace(/\\/g, "/");
   if (normalizedPath.startsWith("/images/")) return normalizedPath;
   if (

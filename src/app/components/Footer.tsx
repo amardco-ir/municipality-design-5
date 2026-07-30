@@ -18,7 +18,8 @@ import {
 } from "../data/siteInformation";
 
 const fallbackLogoSrc = "/images/Amard Logo 01.JPG";
-const fallbackEnamadLogoSrc = "/images/enamad-logo.svg";
+const fallbackEnamadLogoSrc =
+  "https://trustseal.enamad.ir/logo.aspx?id=585219&Code=VUanmSEzsP0cIy8f9V0c55elh5bdyxC7";
 
 const fallbackFooterInformation: SiteInformation = {
   ...emptySiteInformation,
@@ -64,10 +65,23 @@ export function Footer() {
   };
 
   const logoSrc = resolveInformationImageSrc(information.logo, fallbackLogoSrc);
-  const enamadSrc = resolveInformationImageSrc(
-    information.enamad,
-    fallbackEnamadLogoSrc,
+  const enamadValue = information.enamad?.trim() ?? fallbackEnamadLogoSrc;
+
+  useEffect(() => {
+    console.log("Enamad data:", {
+      raw: information.enamad,
+      trimmed: enamadValue,
+      length: enamadValue.length,
+      isHTML: /<\s*(a|img|script|iframe|div|span)\b/i.test(enamadValue),
+    });
+  }, [information.enamad, enamadValue]);
+
+  const isEnamadMarkup = /<\s*(a|img|script|iframe|div|span)\b/i.test(
+    enamadValue,
   );
+  const enamadSrc = !isEnamadMarkup
+    ? resolveInformationImageSrc(enamadValue, fallbackEnamadLogoSrc)
+    : "";
 
   return (
     <footer
@@ -184,15 +198,24 @@ export function Footer() {
         <div className="border-t border-white/16 pt-8">
           <div className="flex flex-col-reverse items-center justify-between gap-6 md:flex-row">
             <div className="flex w-full flex-col items-center gap-4 md:w-auto md:items-start">
-              {(information.enamad || fallbackEnamadLogoSrc) && (
-                <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-xl border border-white/24 bg-white p-3 shadow-xl shadow-black/15 md:h-36 md:w-36">
+              <div className="flex min-h-[88px] w-full max-w-[180px] items-center justify-center rounded-xl border border-white/24 bg-white p-3 shadow-xl shadow-black/15">
+                {isEnamadMarkup ? (
+                  <div
+                    className="flex w-full items-center justify-center overflow-hidden"
+                    dangerouslySetInnerHTML={{ __html: enamadValue }}
+                  />
+                ) : (
                   <img
                     src={enamadSrc}
                     alt="نماد اعتماد الکترونیکی"
                     className="h-full w-full object-contain"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display =
+                        "none";
+                    }}
                   />
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="flex flex-1 flex-col items-center gap-4 md:items-end">

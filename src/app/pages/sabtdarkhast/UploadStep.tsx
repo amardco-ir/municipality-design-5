@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import {
   AlertCircle,
   Check,
@@ -19,6 +19,9 @@ interface UploadStepProps {
   lackDocumentsError: string;
   uploadError: string;
   isSubmitting: boolean;
+  selectedDocumentId: string;
+  onSelectDocument: (documentId: string) => void;
+  defectIsDefense: boolean;
 }
 
 interface SelectedUploadFile {
@@ -54,14 +57,17 @@ export function UploadStep({
   lackDocumentsError,
   uploadError,
   isSubmitting,
+  selectedDocumentId,
+  onSelectDocument,
+  defectIsDefense,
 }: UploadStepProps) {
   const [files, setFiles] = useState<SelectedUploadFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [submitError, setSubmitError] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    setFiles((prev) => [...prev, ...mapFilesForUpload(e.target.files!)]);
+    setFiles((prev) => [...prev, ...mapFilesForUpload(e.target.files)]);
     setSubmitError(false);
   };
 
@@ -69,10 +75,7 @@ export function UploadStep({
     setFiles((prev) => prev.filter((_, idx) => idx !== i));
 
   const handleSubmit = () => {
-    if (files.length === 0) {
-      setSubmitError(true);
-      return;
-    }
+    setSubmitError(false);
     onSubmit(files.map((file) => file.file));
   };
 
@@ -106,16 +109,46 @@ export function UploadStep({
             </p>
           )}
 
-          {!lackDocumentsLoading &&
-            requiredDocuments.map((doc, i) => (
-              <div
-                key={`${doc}-${i}`}
-                className="flex items-center gap-2 text-xs text-foreground/70"
-              >
-                <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary/50" />
-                {doc}
-              </div>
-            ))}
+          {!lackDocumentsLoading && lackDocuments.length > 0
+            ? lackDocuments.map((doc) => (
+                <label
+                  key={doc.id}
+                  className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border/50 bg-card/50 px-4 py-3 text-xs transition-all hover:border-primary/60"
+                >
+                  <input
+                    type="radio"
+                    name="lackDocument"
+                    value={doc.id}
+                    checked={doc.id === selectedDocumentId}
+                    onChange={() => onSelectDocument(doc.id)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-foreground">
+                      {doc.title}
+                    </div>
+                    {doc.description && (
+                      <div className="text-[11px] text-muted-foreground">
+                        {doc.description}
+                      </div>
+                    )}
+                  </div>
+                  {doc.isDefense && (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      دفاع
+                    </span>
+                  )}
+                </label>
+              ))
+            : requiredDocuments.map((doc, i) => (
+                <div
+                  key={`${doc}-${i}`}
+                  className="flex items-center gap-2 text-xs text-foreground/70"
+                >
+                  <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary/50" />
+                  {doc}
+                </div>
+              ))}
         </div>
       </motion.article>
 
@@ -182,6 +215,24 @@ export function UploadStep({
             <p className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="h-3.5 w-3.5" />
               {uploadError}
+            </p>
+          )}
+
+          {selectedDocumentId ? (
+            <div className="space-y-1 text-[11px] text-muted-foreground">
+              <p>
+                مدرک انتخاب شده:{" "}
+                {
+                  lackDocuments.find((doc) => doc.id === selectedDocumentId)
+                    ?.title
+                }
+              </p>
+              <p>وضعیت مدرک: {defectIsDefense ? "دفاعی" : "عادی"}</p>
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              انتخاب مدرک برای دریافت وضعیت نقص لازم نیست، ولی اگر قصد آپلود
+              دارید یکی را انتخاب کنید.
             </p>
           )}
 
