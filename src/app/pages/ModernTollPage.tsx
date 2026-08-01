@@ -16,8 +16,8 @@ import {
   Users,
   Receipt,
   History,
-  LayoutGrid,  
-  MapPinHouse, 
+  LayoutGrid,
+  MapPinHouse,
   CreditCard,
   LoaderCircle,
   Wallet,
@@ -43,7 +43,11 @@ import {
   requestPaymentToken,
   type PaymentIdentifiers,
 } from "../services/paymentService";
-import { PropertyTreeList, type PropertyItem as TreePropertyItem, type PropertyTreeItem } from "../components/PropertyTreeList";
+import {
+  PropertyTreeList,
+  type PropertyItem as TreePropertyItem,
+  type PropertyTreeItem,
+} from "../components/PropertyTreeList";
 import {
   fetchCurrentUserPropertyFiles,
   flattenApiPropertyFiles,
@@ -108,8 +112,14 @@ const billRows = (bill: RenovationBill): LabelValue[] => [
   { label: "تاریخ صدور", value: bill.DateSodor },
   { label: "شناسه قبض", value: bill.ShenaseGhabz },
   { label: "شناسه پرداخت", value: bill.ShenasePardakht },
-  { label: "مبلغ", value: `${Number(bill.Price || 0).toLocaleString("fa-IR")} ریال` },
-  { label: "دیرکرد", value: `${Number(bill.DelayedPrice || 0).toLocaleString("fa-IR")} ریال` },
+  {
+    label: "مبلغ",
+    value: `${Number(bill.Price || 0).toLocaleString("fa-IR")} ریال`,
+  },
+  {
+    label: "دیرکرد",
+    value: `${Number(bill.DelayedPrice || 0).toLocaleString("fa-IR")} ریال`,
+  },
   { label: "وضعیت", value: bill.PaymentStatus ? "پرداخت شده" : "پرداخت نشده" },
   { label: "نشانی", value: bill.Address || emptyDisplay },
   { label: "توضیحات", value: bill.Description || emptyDisplay },
@@ -196,10 +206,13 @@ const modernTollMoneyKeys = new Set([
 ]);
 
 const formatDisplayValue = (value: unknown, key?: string) => {
-  if (value === undefined || value === null || value === "") return emptyDisplay;
+  if (value === undefined || value === null || value === "")
+    return emptyDisplay;
   if (typeof value === "number" && Number.isFinite(value)) {
     const formatted = value.toLocaleString("fa-IR");
-    return key && modernTollMoneyKeys.has(key) ? `${formatted} ریال` : formatted;
+    return key && modernTollMoneyKeys.has(key)
+      ? `${formatted} ریال`
+      : formatted;
   }
   if (typeof value === "boolean") return value ? "بله" : "خیر";
   return String(value);
@@ -348,15 +361,18 @@ const mapOwner = (owner: any, index: number): OwnerItem => {
     lastName: firstFilledText(source.Family, source.lastName),
     ownerType: firstFilledText(source.NoeMalek, source.ownerType),
     fatherName: firstFilledText(source.Father, source.fatherName),
-    birthPlace: firstFilledText(source.Sodor, source.birthPlace, source.issuePlace),
+    birthPlace: firstFilledText(
+      source.Sodor,
+      source.birthPlace,
+      source.issuePlace,
+    ),
   };
 };
 
 export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const [propertyItems, setPropertyItems] = useState<LocalPropertyItem[]>([]);
-  const [selectedProperty, setSelectedProperty] = useState<LocalPropertyItem | null>(
-    null,
-  );
+  const [selectedProperty, setSelectedProperty] =
+    useState<LocalPropertyItem | null>(null);
   const [owners, setOwners] = useState<OwnerItem[]>([]);
   const [feesRight, setFeesRight] = useState<LabelValue[]>([]);
   const [feesLeft, setFeesLeft] = useState<LabelValue[]>([]);
@@ -385,7 +401,9 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const [isRenovationLoading, setIsRenovationLoading] = useState(true);
   const [renovationBills, setRenovationBills] = useState<RenovationBill[]>([]);
-  const [renovationServices, setRenovationServices] = useState<LabelValue[]>([]);
+  const [renovationServices, setRenovationServices] = useState<LabelValue[]>(
+    [],
+  );
   const [payingBillIndex, setPayingBillIndex] = useState<number | null>(null);
   const renovationRequestIdRef = useRef(0);
   const paymentAttemptIdRef = useRef(0);
@@ -570,7 +588,10 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setError("");
   };
 
-  const handlePropertyTreeSelect = (property: TreePropertyItem, treeItem: PropertyTreeItem) => {
+  const handlePropertyTreeSelect = (
+    property: TreePropertyItem,
+    treeItem: PropertyTreeItem,
+  ) => {
     const codes: RenewalCodes = {
       region: "",
       neighborhood: "",
@@ -580,9 +601,12 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       apartment: "",
       guild: "",
     };
-    
+
     // Parse the fullCode to extract codes
-    const parts = treeItem.fullCode.split("-").map(p => p.trim()).filter(Boolean);
+    const parts = treeItem.fullCode
+      .split("-")
+      .map((p) => p.trim())
+      .filter(Boolean);
     if (parts.length >= 7) {
       codes.region = parts[0];
       codes.neighborhood = parts[1];
@@ -592,7 +616,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       codes.apartment = parts[5];
       codes.guild = parts[6];
     }
-    
+
     const prop: LocalPropertyItem = {
       id: treeItem.id,
       fullCode: treeItem.fullCode,
@@ -600,7 +624,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       description: treeItem.text,
       codes: codes,
     };
-    
+
     selectPropertyFromList(prop);
     void loadRenovationData(prop.id, prop.fullCode);
   };
@@ -621,21 +645,21 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
         }
 
         const rawList = getPropertyFileList(data);
-        const mapped: LocalPropertyItem[] = flattenApiPropertyFiles(rawList).map(
-          (item: any, index: number) => {
-            const cleanedCode = normalizeCode(
-              item.codeN ?? item.fullCode ?? item.codeNosazi ?? "",
-            );
-            return {
-              id: String(item.Id ?? item.shop ?? index + 1),
-              fullCode: cleanedCode || "—",
-              ownerName: item.ownerName ?? item.tvItems?.[0]?.Text ?? "—",
-              description:
-                item.tvItems?.[0]?.Text?.trim() ?? item.codeN ?? "بدون توضیحات",
-              codes: splitCode(cleanedCode),
-            };
-          },
-        );
+        const mapped: LocalPropertyItem[] = flattenApiPropertyFiles(
+          rawList,
+        ).map((item: any, index: number) => {
+          const cleanedCode = normalizeCode(
+            item.codeN ?? item.fullCode ?? item.codeNosazi ?? "",
+          );
+          return {
+            id: String(item.Id ?? item.shop ?? index + 1),
+            fullCode: cleanedCode || "—",
+            ownerName: item.ownerName ?? item.tvItems?.[0]?.Text ?? "—",
+            description:
+              item.tvItems?.[0]?.Text?.trim() ?? item.codeN ?? "بدون توضیحات",
+            codes: splitCode(cleanedCode),
+          };
+        });
         propertyCodeSetRef.current = new Set(
           mapped
             .map((item) => getComparableCode(item.fullCode))
@@ -648,20 +672,25 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
           // Try to restore previously selected property from localStorage
           const storedFullCode = getSelectedPropertyFullCode();
           let selectedProp: LocalPropertyItem | null = null;
-          
+
           if (storedFullCode) {
             const normalizedStoredCode = normalizeRenewalCode(storedFullCode);
             // Find matching property by fullCode
-            selectedProp = mapped.find(item => 
-              normalizeRenewalCode(item.fullCode) === normalizedStoredCode
-            ) ?? null;
+            selectedProp =
+              mapped.find(
+                (item) =>
+                  normalizeRenewalCode(item.fullCode) === normalizedStoredCode,
+              ) ?? null;
           }
-          
+
           // If no stored property found, use the first one
           const propertyToSelect = selectedProp ?? mapped[0];
           setSelectedProperty(propertyToSelect);
           setSearchInputs(propertyToSelect.codes);
-          void loadRenovationData(propertyToSelect.id, propertyToSelect.fullCode);
+          void loadRenovationData(
+            propertyToSelect.id,
+            propertyToSelect.fullCode,
+          );
         } else {
           setIsRenovationLoading(false);
         }
@@ -764,9 +793,9 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const hasCurrentFees = currentFeeRows.length > 0;
   const canStartPayment = Boolean(
     token &&
-      paymentIdentifiers &&
-      !isPaymentLoading &&
-      !renovationBills[0]?.PaymentStatus,
+    paymentIdentifiers &&
+    !isPaymentLoading &&
+    !renovationBills[0]?.PaymentStatus,
   );
   const paymentHint = !token
     ? "برای پرداخت، ابتدا وارد حساب کاربری شوید."
@@ -1020,8 +1049,8 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
               <div className="flex flex-wrap items-center gap-2">
                 <HelpButton
                   title="عوارض نوسازی جاری"
-                desc="پس از جستجو، اطلاعات قبض، مبلغ عوارض، دیرکرد و وضعیت پرداخت در این بخش نمایش داده می‌شود. خروجی PDF فقط وقتی داده دریافت شده باشد فعال است."
-              />
+                  desc="پس از جستجو، اطلاعات قبض، مبلغ عوارض، دیرکرد و وضعیت پرداخت در این بخش نمایش داده می‌شود. خروجی PDF فقط وقتی داده دریافت شده باشد فعال است."
+                />
                 {hasCurrentFees && (
                   <button
                     type="button"
@@ -1057,100 +1086,103 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                 <>
                   <div className="grid grid-cols-1 gap-x-8 gap-y-0 md:grid-cols-2">
                     <div className="space-y-0">
-                  {(feesRight.length
-                    ? feesRight
-                    : Array(9).fill({ label: "—", value: "—" })
-                  ).map((field, i) => (
-                    <div
-                      key={i}
-                      className="flex justify-between border-b border-border/30 py-2.5 text-xs md:text-sm"
-                    >
-                      <span className="text-muted-foreground">
-                        {field.label} :
-                      </span>
-                      <span className="font-medium text-foreground/80">
-                        {field.value}
-                      </span>
-                    </div>
-                  ))}
-                    </div>
-                    <div className="space-y-0">
-                  {(feesLeft.length
-                    ? feesLeft
-                    : Array(9).fill({ label: "—", value: "—" })
-                  ).map((field, i) => (
-                    <div
-                      key={i}
-                      className="flex justify-between border-b border-border/30 py-2.5 text-xs md:text-sm"
-                    >
-                      <span className="text-muted-foreground">
-                        {field.label} :
-                      </span>
-                      <span className="font-medium text-foreground/80">
-                        {field.value}
-                      </span>
-                    </div>
-                  ))}
-                    </div>
-                  </div>
-
-              <div className="mt-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 sm:p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                      <Wallet className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-foreground">
-                        پرداخت آنلاین عوارض
-                      </h3>
-                      <p className="mt-1 text-[11px] leading-5 text-muted-foreground sm:text-xs">
-                        {paymentHint}
-                      </p>
-                      {paymentIdentifiers && (
-                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-foreground/70 sm:text-[11px]">
-                          <span>
-                            شناسه قبض: <bdi dir="ltr">{paymentIdentifiers.billId}</bdi>
+                      {(feesRight.length
+                        ? feesRight
+                        : Array(9).fill({ label: "—", value: "—" })
+                      ).map((field, i) => (
+                        <div
+                          key={i}
+                          className="flex justify-between border-b border-border/30 py-2.5 text-xs md:text-sm"
+                        >
+                          <span className="text-muted-foreground">
+                            {field.label} :
                           </span>
-                          <span>
-                            شناسه پرداخت:{" "}
-                            <bdi dir="ltr">{paymentIdentifiers.paymentId}</bdi>
+                          <span className="font-medium text-foreground/80">
+                            {field.value}
                           </span>
                         </div>
-                      )}
+                      ))}
+                    </div>
+                    <div className="space-y-0">
+                      {(feesLeft.length
+                        ? feesLeft
+                        : Array(9).fill({ label: "—", value: "—" })
+                      ).map((field, i) => (
+                        <div
+                          key={i}
+                          className="flex justify-between border-b border-border/30 py-2.5 text-xs md:text-sm"
+                        >
+                          <span className="text-muted-foreground">
+                            {field.label} :
+                          </span>
+                          <span className="font-medium text-foreground/80">
+                            {field.value}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handlePayment(renovationBills[0], 0)}
-                    disabled={!canStartPayment}
-                    aria-busy={isPaymentLoading}
-                    className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted-foreground/35 disabled:shadow-none sm:w-auto"
-                  >
-                    {isPaymentLoading ? (
-                      <LoaderCircle className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <CreditCard className="h-5 w-5" />
-                    )}
-                    {renovationBills[0]?.PaymentStatus
-                      ? "پرداخت شده"
-                      : isPaymentLoading && payingBillIndex === 0
-                        ? "در حال اتصال به درگاه..."
-                        : "پرداخت عوارض"}
-                  </button>
-                </div>
+                  <div className="mt-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 sm:p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                          <Wallet className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-bold text-foreground">
+                            پرداخت آنلاین عوارض
+                          </h3>
+                          <p className="mt-1 text-[11px] leading-5 text-muted-foreground sm:text-xs">
+                            {paymentHint}
+                          </p>
+                          {paymentIdentifiers && (
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-foreground/70 sm:text-[11px]">
+                              <span>
+                                شناسه قبض:{" "}
+                                <bdi dir="ltr">{paymentIdentifiers.billId}</bdi>
+                              </span>
+                              <span>
+                                شناسه پرداخت:{" "}
+                                <bdi dir="ltr">
+                                  {paymentIdentifiers.paymentId}
+                                </bdi>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
-                {paymentError && (
-                  <div
-                    role="alert"
-                    className="mt-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs leading-6 text-destructive"
-                  >
-                    {paymentError}
+                      <button
+                        type="button"
+                        onClick={() => handlePayment(renovationBills[0], 0)}
+                        disabled={!canStartPayment}
+                        aria-busy={isPaymentLoading}
+                        className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted-foreground/35 disabled:shadow-none sm:w-auto"
+                      >
+                        {isPaymentLoading ? (
+                          <LoaderCircle className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <CreditCard className="h-5 w-5" />
+                        )}
+                        {renovationBills[0]?.PaymentStatus
+                          ? "پرداخت شده"
+                          : isPaymentLoading && payingBillIndex === 0
+                            ? "در حال اتصال به درگاه..."
+                            : "پرداخت عوارض"}
+                      </button>
+                    </div>
+
+                    {paymentError && (
+                      <div
+                        role="alert"
+                        className="mt-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs leading-6 text-destructive"
+                      >
+                        {paymentError}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              </>
+                </>
               )}
             </div>
           </motion.article>
@@ -1165,7 +1197,9 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
             <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
               <div className="flex items-center gap-2">
                 <Layers className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold text-foreground">خدمات نوسازی</h2>
+                <h2 className="text-sm font-bold text-foreground">
+                  خدمات نوسازی
+                </h2>
               </div>
               <HelpButton
                 title="خدمات نوسازی"
@@ -1176,14 +1210,21 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
               <table className="w-full min-w-[480px] border-separate border-spacing-0 text-xs md:text-sm">
                 <thead>
                   <tr className="bg-muted/40 text-muted-foreground">
-                    <th className="rounded-r-xl p-3 text-right font-medium">عنوان خدمت</th>
-                    <th className="rounded-l-xl p-3 text-right font-medium">مقدار / مبلغ</th>
+                    <th className="rounded-r-xl p-3 text-right font-medium">
+                      عنوان خدمت
+                    </th>
+                    <th className="rounded-l-xl p-3 text-right font-medium">
+                      مقدار / مبلغ
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {isRenovationLoading ? (
                     <tr>
-                      <td colSpan={2} className="p-5 text-center text-muted-foreground">
+                      <td
+                        colSpan={2}
+                        className="p-5 text-center text-muted-foreground"
+                      >
                         <span className="inline-flex items-center gap-2">
                           <LoaderCircle className="h-4 w-4 animate-spin" />
                           در حال دریافت خدمات نوسازی...
@@ -1196,15 +1237,23 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                         key={`${service.label}-${index}`}
                         className="border-b border-border/40 transition-colors hover:bg-muted/20"
                       >
-                        <td className="p-3 font-medium text-foreground">{service.label}</td>
-                        <td className="p-3 text-foreground/80" dir="auto">
+                        <td className="p-3 font-medium text-foreground">
+                          {service.label}
+                        </td>
+                        <td
+                          className="p-3 text-foreground/80 flex justify-center"
+                          dir="auto"
+                        >
                           {service.value}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={2} className="p-5 text-center text-muted-foreground">
+                      <td
+                        colSpan={2}
+                        className="p-5 text-center text-muted-foreground"
+                      >
                         رکورد خدمات نوسازی برای این کد دریافت نشد.
                       </td>
                     </tr>
@@ -1257,25 +1306,26 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
               )}
             </div>
           </motion.article>
-          
+
           {/* نقشه */}
           <motion.article
             initial={{ opacity: 0, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="soft-card mesh-panel group relative h-64 overflow-hidden sm:h-80 md:h-[400px]">            
-              <button
-                type="button"
-                onClick={() =>
-                  handleOpenHelp(
-                    "نقشه ملک",
-                    "این قسمت موقعیت ملک را نشان می‌دهد. با کلیک کردن روی هر ملک، اطلاعات اصلی ملک روی نقشه نمایش داده می‌شود و دکمه‌های بزرگنمایی و بازگشت برای کنترل نما قرار دارند.",
-                  )
-                }
-                className="absolute right-3 top-3 z-20 inline-flex items-center gap-1 rounded-lg border bor                                                                                                                                                                                                                                                                                                         der-primary/35 bg-card/90 px-2.5 py-1 text-[10px] font-bold text-primary shadow-lg transition-colors hover:bg-card md:text-xs"
-              >
-                <Info className="h-3.5 w-3.5" /> راهنما
-              </button>                  
+            className="soft-card mesh-panel group relative h-64 overflow-hidden sm:h-80 md:h-[400px]"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                handleOpenHelp(
+                  "نقشه ملک",
+                  "این قسمت موقعیت ملک را نشان می‌دهد. با کلیک کردن روی هر ملک، اطلاعات اصلی ملک روی نقشه نمایش داده می‌شود و دکمه‌های بزرگنمایی و بازگشت برای کنترل نما قرار دارند.",
+                )
+              }
+              className="absolute right-3 top-3 z-20 inline-flex items-center gap-1 rounded-lg border bor                                                                                                                                                                                                                                                                                                         der-primary/35 bg-card/90 px-2.5 py-1 text-[10px] font-bold text-primary shadow-lg transition-colors hover:bg-card md:text-xs"
+            >
+              <Info className="h-3.5 w-3.5" /> راهنما
+            </button>
             <div className="absolute inset-0 bg-slate-800">
               <Map ref={mapRef} autoSelectCode={fullCode} />
               {/* {activeProperty && (
@@ -1306,47 +1356,55 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                 </div>*/}
             </div>
             <div className="absolute left-3 top-2 flex flex-col gap-2">
-              <button 
+              <button
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                 onClick={() => mapRef.current?.zoomIn()}
-                title="بزرگ‌نمایی">
-                  <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                title="بزرگ‌نمایی"
+              >
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
-              <button 
+              <button
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                 onClick={() => mapRef.current?.zoomOut()}
-                title="کوچک‌نمایی">
-                  <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                title="کوچک‌نمایی"
+              >
+                <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
-              <button 
+              <button
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                 onClick={() => mapRef.current?.goHome()}
-                title="بازگشت به نمای اصلی">
-                  <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                title="بازگشت به نمای اصلی"
+              >
+                <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
-              <button          
+              <button
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                 onClick={() => mapRef.current?.toggleBasemap()}
-                title="تغییر نقشه زمینه">
-                <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4"/>
+                title="تغییر نقشه زمینه"
+              >
+                <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
             </div>
             <div className="absolute right-3 top-12 flex flex-col gap-2">
-            {/*<div className="absolute right-3 top-12 flex flex-col gap-2 sm:left-4 sm:top-12">*/}
-              <button 
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-              onClick={() => {mapRef.current?.selectMelkByCodeNosazi(fullCode);}}
-              title="موقعیت من">
+              {/*<div className="absolute right-3 top-12 flex flex-col gap-2 sm:left-4 sm:top-12">*/}
+              <button
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+                onClick={() => {
+                  mapRef.current?.selectMelkByCodeNosazi(fullCode);
+                }}
+                title="موقعیت من"
+              >
                 <MapPinHouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
-              <button 
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
-              onClick={() => mapRef.current?.clearGraphics()}
-              title="پاک کردن انتخاب">
+              <button
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
+                onClick={() => mapRef.current?.clearGraphics()}
+                title="پاک کردن انتخاب"
+              >
                 <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>          
-            </div>       
-          </motion.article>                          
+              </button>
+            </div>
+          </motion.article>
         </div>
       </main>
     </div>
