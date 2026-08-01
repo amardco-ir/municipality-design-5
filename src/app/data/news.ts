@@ -52,8 +52,8 @@ interface ProblemDetails {
   errors?: Record<string, string[]>;
 }
 
-const NEWS_ENDPOINT = "/api/News";
-const ADMIN_NEWS_ENDPOINT = `${NEWS_ENDPOINT}/admin`;
+const NEWS_ENDPOINT = "/api/news";
+const ADMIN_NEWS_ENDPOINT = "/api/admin/news";
 
 let adminNewsCache: AdminNewsItem[] | null = null;
 let adminNewsCacheToken = "";
@@ -341,7 +341,7 @@ export async function fetchAdminNews(
 }
 
 export async function createNews(news: NewsInput): Promise<void> {
-  await requestNews(NEWS_ENDPOINT, {
+  await requestNews(ADMIN_NEWS_ENDPOINT, {
     method: "POST",
     body: toNewsFormData(news),
   });
@@ -352,7 +352,7 @@ export async function updateNews(
   id: string,
   news: NewsInput,
 ): Promise<void> {
-  await requestNews(NEWS_ENDPOINT, {
+  await requestNews(ADMIN_NEWS_ENDPOINT, {
     method: "PUT",
     body: toNewsFormData(news, id),
   });
@@ -360,14 +360,14 @@ export async function updateNews(
 }
 
 export async function deleteNews(id: string): Promise<void> {
-  await requestNews(`${NEWS_ENDPOINT}/${id}`, {
+  await requestNews(`${ADMIN_NEWS_ENDPOINT}/${id}`, {
     method: "DELETE",
   });
   adminNewsCache = adminNewsCache?.filter((item) => item.id !== id) ?? null;
 }
 
 export async function changeNewsStatus(id: string): Promise<void> {
-  await requestNews(`${NEWS_ENDPOINT}/${id}/status`, {
+  await requestNews(`${ADMIN_NEWS_ENDPOINT}/${id}/status`, {
     method: "PATCH",
   });
   adminNewsCache =

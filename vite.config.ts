@@ -4,11 +4,11 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
-const DEFAULT_API_BASE_URL = "https://shahrvandyar.com/api-old";
-const DEFAULT_DOTNET10_API_BASE_URL = "https://shahrvandyar.com/api-core";
-const DEFAULT_PAYMENT_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_API_BASE_URL = "http://172.16.1.16:6102";
+const DEFAULT_DOTNET10_API_BASE_URL = "http://172.16.1.16:6101";
+const DEFAULT_PAYMENT_API_BASE_URL = "http://172.16.1.16:6101";
 const DEFAULT_RENOVATION_BILL_API_BASE_URL =
-  "https://shahrvandyar.com/api-shahrsazi";
+  "http://172.16.1.16:5100";
 
 const readEnvUrl = (
   env: Record<string, string>,
