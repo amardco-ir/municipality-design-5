@@ -95,7 +95,7 @@ export class GISMap {
 
   async initialize(container: HTMLDivElement) {
     this.melkLayer = new FeatureLayer({
-      url: "http://192.168.10.3:6080/arcgis/rest/services/Maragheh/Maragheh_14040117/MapServer/0",
+      url: "/arcgis/rest/services/Maragheh/Maraghe_14050406/MapServer/1",
       minScale: 0,
     });
     // this.parcelService = new ParcelService(this.melkLayer);
@@ -108,7 +108,7 @@ export class GISMap {
       thumbnailUrl: "../../../dist/images/Satellite.png",
       baseLayers: [
         new ImageryLayer({
-          url: "http://192.168.10.3:6080/arcgis/rest/services/Maragheh/Google2025/ImageServer",
+          url: "/arcgis/rest/services/Maragheh/Google2025/ImageServer",
         }),
       ],
     });
@@ -131,6 +131,8 @@ export class GISMap {
     this.view.ui.add(this.scaleBar, "bottom-left");
 
     this.view.ui.remove("attribution");
+    //this.view.ui.add(this.home, "top-left");
+    this.view.ui.remove("zoom");
 
     this.view.popup.dockEnabled = false;
     this.view.popup.dockOptions = {
@@ -175,8 +177,6 @@ export class GISMap {
         targetGeometry: extent,
       },
     });
-    //this.view.ui.add(this.home, "top-left");
-    this.view.ui.remove("zoom");
 
     this.basemapToggle = new BasemapToggle({
       view: this.view,
@@ -189,7 +189,6 @@ export class GISMap {
 
   // async findParcel(code: string) {
   //   const result = await this.parcelService.findByCodeNosazi(code);
-
 
   //   if (result.features.length === 0) {
   //     return;

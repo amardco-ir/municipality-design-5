@@ -16,6 +16,7 @@ import {
   Moon,
   LayoutGrid,  
   MapPinHouse,
+  Upload,
 } from "lucide-react";
 import { Link } from "react-router";
 import {
@@ -39,6 +40,7 @@ import { useRef } from "react";
 import Map from "../components/Map";
 //import { MapHandle } from "@/app/components/Map/types";
 import { MapHandle } from "../components/Map/types";
+import { DefectUploadModal } from "./request-tracking/DefectUploadModal";
 
 interface OwnerPropertyItem {
   id: string;
@@ -68,6 +70,33 @@ interface RequestDetailItem {
   date: string;
   description: string;
 }
+
+interface UploadContext {
+  shop: string;
+  codeNodeTree: string;
+}
+
+const getUploadContext = (...values: any[]): UploadContext => {
+  const candidates = values.filter(Boolean);
+  const firstValue = (keys: string[]) => {
+    for (const key of keys) {
+      for (const candidate of candidates) {
+        const value = candidate?.[key] ?? candidate?.raw?.[key];
+        if (value !== undefined && value !== null && String(value).trim()) {
+          return String(value).trim();
+        }
+      }
+    }
+    return "";
+  };
+
+  return {
+    shop: firstValue(["shop", "Shop", "shopId", "ShopId", "malekId", "MalekId", "id", "Id"]),
+    codeNodeTree:
+      firstValue(["codeNodeTree", "CodeNodeTree", "codeTree", "CodeTree"]) ||
+      firstValue(["id", "Id"]),
+  };
+};
 
 interface Props {
   isDark: boolean;
@@ -109,6 +138,11 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
   const [requestDetailsError, setRequestDetailsError] = useState("");
   const [selectedCodeNosazi, setSelectedCodeNosazi] = useState("");
   const [selectedRequestId, setSelectedRequestId] = useState("");
+  const [uploadContext, setUploadContext] = useState<UploadContext>({
+    shop: "",
+    codeNodeTree: "",
+  });
+  const [isDefectUploadOpen, setIsDefectUploadOpen] = useState(false);
 
   const toSearchValuesFromCode = (fullCode: string): RenewalCodes => {
     const clean = fullCode.trim();
@@ -436,9 +470,14 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
           const storedFullCode = getSelectedPropertyFullCode()?.trim();
           const codeToSelect =
             storedFullCode || mappedProperties[0].fullCode;
+          const propertyToSelect =
+            mappedProperties.find(
+              (property) => property.fullCode.trim() === codeToSelect,
+            ) ?? mappedProperties[0];
 
           setSelectedCodeNosazi(codeToSelect);
           setSearchValues(toSearchValuesFromCode(codeToSelect));
+          setUploadContext(getUploadContext(propertyToSelect, propertyToSelect.raw));
           void fetchRequestData(codeToSelect);
         }
       } catch (error) {
@@ -456,7 +495,12 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
   // وقتی کاربر روی دکمه جستجو کلیک می‌کند
   const handleSearch = () => {
     const codeNosazi = buildCodeFromSearchValues(searchValues);
+    const matchedProperty = ownerProperties.find(
+      (property) => property.fullCode.trim() === codeNosazi.trim(),
+    );
     setSelectedCodeNosazi(codeNosazi);
+    setUploadContext(getUploadContext(matchedProperty, matchedProperty?.raw));
+    setIsDefectUploadOpen(false);
     void fetchRequestData(codeNosazi);
   };
 
@@ -464,6 +508,8 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
     const codeNosazi = treeItem.fullCode;
     setSelectedCodeNosazi(codeNosazi);
     setSearchValues(toSearchValuesFromCode(codeNosazi));
+    setUploadContext(getUploadContext(treeItem, property));
+    setIsDefectUploadOpen(false);
     setApiError("");
     setRequestDetailsError("");
     void fetchRequestData(codeNosazi);
@@ -481,6 +527,10 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
 
   // آپدیت لیست درخواست‌ها بر اساس فایل فعال
   const filledRequestRows = useMemo(() => requests, [requests]);
+  const selectedRequest = useMemo(
+    () => requests.find((request) => request.id === selectedRequestId) ?? null,
+    [requests, selectedRequestId],
+  );
 
   const HelpButton = ({ title, desc }: { title: string; desc: string }) => (
     <button
@@ -631,10 +681,21 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
                 <ClipboardList className="h-4 w-4 text-primary" />
                 <h2 className="text-sm font-bold">پیگیری درخواست ها</h2>
               </div>
-              <HelpButton
-                title="جدول پیگیری درخواست ها"
-                desc="این جدول درخواست‌های ثبت‌شده پرونده فعال را نمایش می‌دهد. روی هر ردیف کلیک کنید تا جزئیات همان درخواست در جدول بعدی نمایش داده شود؛ ستون وضعیت نشان می‌دهد درخواست در چه حالتی قرار دارد."
-              />
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDefectUploadOpen(true)}
+                  disabled={!selectedRequest}
+                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-emerald-500/35 bg-emerald-500/10 px-2.5 text-[10px] font-bold text-emerald-700 transition-colors hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-300 md:text-xs"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  آپلود کسری مدارک
+                </button>
+                <HelpButton
+                  title="جدول پیگیری درخواست ها"
+                  desc="این جدول درخواست‌های ثبت‌شده پرونده فعال را نمایش می‌دهد. روی هر ردیف کلیک کنید تا جزئیات همان درخواست در جدول بعدی نمایش داده شود؛ ستون وضعیت نشان می‌دهد درخواست در چه حالتی قرار دارد."
+                />
+              </div>
             </div>
             <div className="responsive-table-shell p-3 sm:p-4">
               <table className="w-full min-w-[560px] border-separate border-spacing-0 text-xs md:text-sm">
@@ -878,6 +939,15 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
       </main>
 
       {/* مودال راهنما */}
+      <DefectUploadModal
+        isOpen={isDefectUploadOpen}
+        requestId={selectedRequest?.code ?? selectedRequestId}
+        shop={uploadContext.shop}
+        codeN={selectedCodeNosazi}
+        codeNodeTree={uploadContext.codeNodeTree}
+        onClose={() => setIsDefectUploadOpen(false)}
+      />
+
       <AnimatePresence>
         {isModalOpen && (
           <motion.div

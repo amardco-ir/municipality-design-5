@@ -208,8 +208,9 @@ export function LoginModal({
                         onChange={(e) => onMobileChange(e.target.value)}
                         placeholder="09xxxxxxxxx"
                         inputMode="tel"
+                        dir="ltr"
                         disabled={loginLoading}
-                        className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                        className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-left text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
                       />
                     </div>
                   </>
@@ -431,8 +432,9 @@ export function LoginModal({
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
                     placeholder="09xxxxxxxxx"
+                    dir="ltr"
                     disabled={regLoading}
-                    className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
+                    className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-left text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
                   />
                 </div>
 

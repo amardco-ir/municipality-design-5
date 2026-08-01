@@ -16,7 +16,7 @@ import {
   normalizeApiResponse,
   type ApiResponse,
 } from "../utils/apiResponseHandler";
-import { apiFetch, dotNet10ApiFetch } from "../data/api";
+import { apiFetch, dotNet10ApiFetch, smsApiFetch } from "../data/api";
 import {
   type PropertyItem,
   type PropertyTreeItem,
@@ -38,7 +38,6 @@ import {
   ComplementaryFormState,
   FormErrors,
   HelpModalContent,
-  LackDocumentItem,
   LookupOption,
   OwnerFormState,
   RequestFormState,
@@ -368,69 +367,6 @@ const getListFromApiValue = (value: any): any[] => {
   return [value];
 };
 
-const mapApiResponseToLackDocuments = (data: any): LackDocumentItem[] =>
-  getListFromApiValue(data).map((item: any, index: number) => {
-    const title =
-      firstText(
-        item.title,
-        item.Title,
-        item.name,
-        item.Name,
-        item.documentTitle,
-        item.DocumentTitle,
-        item.madarek,
-        item.Madarek,
-        item.sharh,
-        item.Sharh,
-        item.tozihat,
-        item.Tozihat,
-      ) || `مدرک ${index + 1}`;
-
-    return {
-      id: firstText(item.id, item.Id, item.code, item.Code, index + 1),
-      title,
-      description: firstText(
-        item.description,
-        item.Description,
-        item.tozihat,
-        item.Tozihat,
-        item.comment,
-        item.Comment,
-      ),
-      isDefense: Boolean(item.IsDefense ?? item.isDefense ?? item.defense),
-    };
-  });
-
-const getDefectIsDefense = (data: any): boolean => {
-  const list = getListFromApiValue(data);
-  const values = list.length ? list : [data];
-
-  return values.some((item: any) => {
-    if (typeof item === "boolean") return item;
-    if (typeof item === "number") return item === 1;
-    if (typeof item === "string") {
-      const normalized = item.trim().toLowerCase();
-      return (
-        normalized === "true" ||
-        normalized === "1" ||
-        normalized.includes("دفاع")
-      );
-    }
-
-    if (!item || typeof item !== "object") return false;
-
-    return Boolean(
-      item.IsDefense ??
-      item.isDefense ??
-      item.IsDefence ??
-      item.isDefence ??
-      item.defense ??
-      item.defence ??
-      item.isDefectDefense,
-    );
-  });
-};
-
 const formatRequestDate = (date: any): string => {
   if (!date) return "—";
 
@@ -621,12 +557,8 @@ export function SabtDarkhastPage({
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
-  const [lackDocuments, setLackDocuments] = useState<LackDocumentItem[]>([]);
-  const [lackDocumentsLoading, setLackDocumentsLoading] = useState(false);
-  const [lackDocumentsError, setLackDocumentsError] = useState("");
-  const [defectIsDefense, setDefectIsDefense] = useState(false);
-  const [selectedLackDocumentId, setSelectedLackDocumentId] = useState("");
   const [registeredRequestId, setRegisteredRequestId] = useState("");
+  const [smsConfirmationError, setSmsConfirmationError] = useState("");
   const [selectedTreeItemId, setSelectedTreeItemId] = useState("");
   const [selectedShopValue, setSelectedShopValue] = useState("");
   const [selectedCodeNodeTree, setSelectedCodeNodeTree] = useState("");
@@ -1718,83 +1650,6 @@ export function SabtDarkhastPage({
     };
   };
 
-  const fetchLackDocuments = async (requestId: string) => {
-    const shod = toNumber(requestId);
-
-    if (!shod) {
-      setLackDocuments([]);
-      setSelectedLackDocumentId("");
-      setLackDocumentsError("شماره درخواست برای دریافت کسری مدارک معتبر نیست.");
-      return [];
-    }
-
-    setLackDocumentsLoading(true);
-    setLackDocumentsError("");
-
-    try {
-      const token = normalizeAuthToken(localStorage.getItem("auth-token"));
-      const response = await apiFetch(
-        `/api/request/Lack?shod=${encodeURIComponent(String(shod))}`,
-        {
-          method: "GET",
-          headers: getAuthHeaders(token),
-        },
-      );
-      const data = await readApiResponse(response, "خطا در دریافت کسری مدارک.");
-
-      const documents = mapApiResponseToLackDocuments(getApiValue(data));
-      setLackDocuments(documents);
-      setSelectedLackDocumentId("");
-      setDefectIsDefense(false);
-      return documents;
-    } catch (error) {
-      setLackDocuments([]);
-      setSelectedLackDocumentId("");
-      setDefectIsDefense(false);
-      setLackDocumentsError(
-        error instanceof Error ? error.message : "خطا در دریافت کسری مدارک.",
-      );
-      return [];
-    } finally {
-      setLackDocumentsLoading(false);
-    }
-  };
-
-  const fetchDefectStatus = async (defectId: string) => {
-    const id = toNumber(defectId);
-
-    if (!id) {
-      setDefectIsDefense(false);
-      return false;
-    }
-
-    const token = normalizeAuthToken(localStorage.getItem("auth-token"));
-    const response = await apiFetch(
-      `/api/request/Defect?id=${encodeURIComponent(String(id))}`,
-      {
-        method: "GET",
-        headers: getAuthHeaders(token),
-      },
-    );
-    const data = await readApiResponse(
-      response,
-      "خطا در دریافت وضعیت نقص مدارک.",
-    );
-    const isDefense = getDefectIsDefense(getApiValue(data));
-
-    setDefectIsDefense(isDefense);
-    return isDefense;
-  };
-
-  const handleLackDocumentSelect = async (documentId: string) => {
-    setSelectedLackDocumentId(documentId);
-    await fetchDefectStatus(documentId);
-  };
-
-  const prepareUploadRequirements = async () => {
-    return { documents: [] as LackDocumentItem[], isDefense: false };
-  };
-
   const handleContinue = async () => {
     const nextErrors = validateForm();
     const payload = buildRequestPayload();
@@ -1852,15 +1707,29 @@ export function SabtDarkhastPage({
 
       setRegisteredRequestId(createdRequestId);
       setRequestForm((prev) => ({ ...prev, id: createdRequestId }));
-      setLackDocuments([]);
-      setLackDocumentsError("");
-      setDefectIsDefense(false);
-      setSelectedLackDocumentId("");
       setUploadError("");
+      setSmsConfirmationError("");
 
-      // دریافت کسری مدارک قبل از نمایش مرحله اپلود
-      await fetchLackDocuments(createdRequestId);
-      setStep("upload");
+      try {
+        const smsResponse = await smsApiFetch("/api/sms/request-confirmation", {
+          method: "POST",
+          headers: getAuthHeaders(token, "application/json"),
+          body: JSON.stringify({
+            requestId: createdRequestId,
+            phoneNumber: ownerForm.phone.trim() || applicantForm.phone.trim(),
+            ownerName: ownerForm.name.trim() || applicantForm.name.trim(),
+          }),
+        });
+        await readApiResponse(smsResponse, "خطا در ارسال پیامک تأیید درخواست.");
+      } catch (smsError) {
+        setSmsConfirmationError(
+          smsError instanceof Error
+            ? smsError.message
+            : "خطا در ارسال پیامک تأیید درخواست.",
+        );
+      }
+
+      setStep("registered");
     } catch (error) {
       setRequestSubmitError(
         error instanceof Error ? error.message : "خطا در ثبت درخواست.",
@@ -1892,9 +1761,6 @@ export function SabtDarkhastPage({
 
     try {
       if (files.length > 0) {
-        const isDefense =
-          defectIsDefense || lackDocuments.some((doc) => doc.isDefense);
-
         for (const file of files) {
           const formData = new FormData();
           formData.append("file", file);
@@ -1902,7 +1768,7 @@ export function SabtDarkhastPage({
           formData.append("Shod", String(shod));
           formData.append("CodeN", codeN);
           formData.append("CodeNodeTree", codeNodeTree);
-          formData.append("IsDefense", String(isDefense));
+          formData.append("IsDefense", "false");
 
           const response = await apiFetch("/api/archive/upload", {
             method: "POST",
@@ -1929,6 +1795,16 @@ export function SabtDarkhastPage({
     setIsModalOpen(true);
   };
 
+  useEffect(() => {
+    if (step !== "registered") return;
+
+    const timer = window.setTimeout(() => {
+      setStep("upload");
+    }, 2200);
+
+    return () => window.clearTimeout(timer);
+  }, [step]);
+
   const handlePropertyTreeSelect = (
     property: PropertyItem,
     treeItem: PropertyTreeItem,
@@ -1945,9 +1821,6 @@ export function SabtDarkhastPage({
         getUploadCodeNodeTreeValue(property),
     );
     setRegisteredRequestId("");
-    setLackDocuments([]);
-    setLackDocumentsError("");
-    setDefectIsDefense(false);
     setUploadError("");
 
     const codes: RenewalCodes = {
@@ -2093,26 +1966,49 @@ export function SabtDarkhastPage({
       <SabtdarkhastFormHeader
         isDark={isDark}
         toggleTheme={toggleTheme}
-        isUploadStep={step === "upload"}
+        isUploadStep={step === "upload" || step === "registered"}
         onBackToForm={() => setStep("form")}
       />
 
       <main className="section-decor px-2 pb-12 pt-20 sm:px-3 sm:pt-24 md:pb-20 md:pt-28 lg:px-6">
         <div className="container mx-auto max-w-6xl space-y-5">
           <AnimatePresence mode="wait">
-            {step === "upload" ? (
+            {step === "registered" ? (
+              <motion.div
+                key="registered"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                className="soft-card mesh-panel flex min-h-[280px] flex-col items-center justify-center gap-4 px-4 py-12 text-center"
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                  <span className="text-3xl leading-none">✓</span>
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-base font-bold leading-8 text-foreground md:text-lg">
+                    کاربر گرامی درخواست شما با شماره{" "}
+                    <span className="text-primary">
+                      {registeredRequestId || requestForm.id}
+                    </span>{" "}
+                    ثبت شد.
+                  </h2>
+                  <p className="text-xs text-muted-foreground md:text-sm">
+                    در حال انتقال به صفحه آپلود مدارک...
+                  </p>
+                  {smsConfirmationError && (
+                    <p className="text-xs text-destructive">
+                      {smsConfirmationError}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            ) : step === "upload" ? (
               <UploadStep
                 key="upload"
                 onBack={() => setStep("form")}
                 onSubmit={handleUploadSubmit}
-                lackDocuments={lackDocuments}
-                lackDocumentsLoading={lackDocumentsLoading}
-                lackDocumentsError={lackDocumentsError}
                 uploadError={uploadError}
                 isSubmitting={isUploadingFiles}
-                selectedDocumentId={selectedLackDocumentId}
-                onSelectDocument={handleLackDocumentSelect}
-                defectIsDefense={defectIsDefense}
               />
             ) : (
               <motion.div

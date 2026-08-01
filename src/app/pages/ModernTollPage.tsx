@@ -11,7 +11,6 @@ import {
   Sun,
   Trash2,
   X,
-  Download,
   Layers,
   FileText,
   Users,
@@ -256,42 +255,6 @@ const escapeExportCell = (value: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-const exportPairsToExcel = (rows: LabelValue[], title: string) => {
-  if (rows.length === 0 || typeof window === "undefined") return;
-
-  const tableRows = rows
-    .map(
-      (row) =>
-        `<tr><td>${escapeExportCell(row.label)}</td><td>${escapeExportCell(
-          row.value,
-        )}</td></tr>`,
-    )
-    .join("");
-  const html = `
-    <html dir="rtl">
-      <head><meta charset="utf-8" /></head>
-      <body>
-        <table border="1">
-          <caption>${escapeExportCell(title)}</caption>
-          <thead><tr><th>عنوان</th><th>مقدار</th></tr></thead>
-          <tbody>${tableRows}</tbody>
-        </table>
-      </body>
-    </html>
-  `;
-  const blob = new Blob([`\uFEFF${html}`], {
-    type: "application/vnd.ms-excel;charset=utf-8;",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${title.replace(/\s+/g, "-")}.xls`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-
 const exportPairsToPdf = (rows: LabelValue[], title: string) => {
   if (rows.length === 0 || typeof window === "undefined") return;
 
@@ -422,6 +385,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const [isRenovationLoading, setIsRenovationLoading] = useState(true);
   const [renovationBills, setRenovationBills] = useState<RenovationBill[]>([]);
+  const [renovationServices, setRenovationServices] = useState<LabelValue[]>([]);
   const [payingBillIndex, setPayingBillIndex] = useState<number | null>(null);
   const renovationRequestIdRef = useRef(0);
   const paymentAttemptIdRef = useRef(0);
@@ -477,6 +441,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   };
 
   const loadRenovationData = async (propertyId: string, code: string) => {
+    setRenovationServices([]);
     if (!token) {
       setIsRenovationLoading(false);
       return;
@@ -535,27 +500,30 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       const bills = receivedBills.filter((bill) => {
         const responseCode = getComparableCode(bill.CodeNosazi);
         return (
-          hasPaymentIdentifiers(bill) &&
           responseCode === comparableRequestedCode &&
           propertyCodeSetRef.current.has(responseCode)
         );
       });
+      const tollBill = bills[0] ?? null;
+      const serviceBill = bills[1] ?? null;
+      const tollBills = tollBill ? [tollBill] : [];
 
-      setRenovationBills(bills);
-      const feePairs = bills[0] ? billRows(bills[0]) : [];
+      setRenovationBills(tollBills);
+      setRenovationServices(serviceBill ? billRows(serviceBill) : []);
+      const feePairs = tollBill ? billRows(tollBill) : [];
       setFeesRight(feePairs.filter((_: unknown, i: number) => i % 2 === 0));
       setFeesLeft(feePairs.filter((_: unknown, i: number) => i % 2 === 1));
       setPaymentIdentifiers(
-        bills[0]
+        tollBill && hasPaymentIdentifiers(tollBill)
           ? {
-              billId: bills[0].ShenaseGhabz,
-              paymentId: bills[0].ShenasePardakht,
+              billId: tollBill.ShenaseGhabz,
+              paymentId: tollBill.ShenasePardakht,
             }
           : null,
       );
 
       setHistoryItems(
-        bills.map((item, index) => ({
+        tollBills.map((item, index) => ({
           id: String(item.ParvandeNo ?? index + 1),
           date: item.DateSodor ?? "—",
           amount: `${Number(item.Price || 0).toLocaleString("fa-IR")} ریال`,
@@ -571,6 +539,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
           : "خطا در دریافت اطلاعات نوسازی.",
       );
       setRenovationBills([]);
+      setRenovationServices([]);
       setFeesRight([]);
       setFeesLeft([]);
       setHistoryItems([]);
@@ -592,6 +561,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setFeesRight([]);
     setFeesLeft([]);
     setRenovationBills([]);
+    setRenovationServices([]);
     setHistoryItems([]);
     setPaymentIdentifiers(null);
     setPaymentError("");
@@ -712,6 +682,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setFeesRight([]);
     setFeesLeft([]);
     setRenovationBills([]);
+    setRenovationServices([]);
     setHistoryItems([]);
     setPaymentIdentifiers(null);
     setPaymentError("");
@@ -1049,20 +1020,9 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
               <div className="flex flex-wrap items-center gap-2">
                 <HelpButton
                   title="عوارض نوسازی جاری"
-                  desc="پس از جستجو، ریز مبالغ عوارض نوسازی، بدهی، معافیت، تخفیف و مبلغ قابل پرداخت در این بخش نمایش داده می‌شود. خروجی اکسل و PDF فقط وقتی داده دریافت شده باشد فعال است."
-                />
+                desc="پس از جستجو، اطلاعات قبض، مبلغ عوارض، دیرکرد و وضعیت پرداخت در این بخش نمایش داده می‌شود. خروجی PDF فقط وقتی داده دریافت شده باشد فعال است."
+              />
                 {hasCurrentFees && (
-                  <>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      exportPairsToExcel(currentFeeRows, "عوارض نوسازی جاری")
-                    }
-                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-3 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-500/15 dark:text-emerald-300"
-                  >
-                    <Download className="h-4 w-4" />
-                    خروجی اکسل
-                  </button>
                   <button
                     type="button"
                     onClick={() =>
@@ -1073,7 +1033,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                     <FileText className="h-4 w-4" />
                     خروجی پی دی اف
                   </button>
-                  </>
                 )}
               </div>
             </div>
@@ -1191,82 +1150,67 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                   </div>
                 )}
               </div>
-
-              {renovationBills.slice(1).map((bill, billOffset) => {
-                const billIndex = billOffset + 1;
-                const rows = billRows(bill);
-                const rightRows = rows.filter((_, index) => index % 2 === 0);
-                const leftRows = rows.filter((_, index) => index % 2 === 1);
-                const isThisBillLoading =
-                  isPaymentLoading && payingBillIndex === billIndex;
-
-                return (
-                  <div
-                    key={`${bill.ShenaseGhabz}-${bill.ShenasePardakht}`}
-                    className="mt-6 border-t border-border/70 pt-6"
-                  >
-                    <div className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
-                      {[rightRows, leftRows].map((column, columnIndex) => (
-                        <div key={columnIndex}>
-                          {column.map((field) => (
-                            <div
-                              key={field.label}
-                              className="flex justify-between gap-4 border-b border-border/30 py-2.5 text-xs md:text-sm"
-                            >
-                              <span className="shrink-0 text-muted-foreground">
-                                {field.label}:
-                              </span>
-                              <bdi
-                                dir="auto"
-                                className="break-all text-left font-medium text-foreground/80"
-                              >
-                                {field.value}
-                              </bdi>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-5 flex flex-col gap-4 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="text-xs leading-6 text-muted-foreground">
-                        <div>
-                          شناسه قبض: <bdi dir="ltr">{bill.ShenaseGhabz}</bdi>
-                        </div>
-                        <div>
-                          شناسه پرداخت:{" "}
-                          <bdi dir="ltr">{bill.ShenasePardakht}</bdi>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handlePayment(bill, billIndex)}
-                        disabled={
-                          isPaymentLoading ||
-                          bill.PaymentStatus ||
-                          !bill.ShenaseGhabz ||
-                          !bill.ShenasePardakht
-                        }
-                        aria-busy={isThisBillLoading}
-                        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-muted-foreground/35 sm:w-auto"
-                      >
-                        {isThisBillLoading ? (
-                          <LoaderCircle className="h-5 w-5 animate-spin" />
-                        ) : (
-                          <CreditCard className="h-5 w-5" />
-                        )}
-                        {bill.PaymentStatus
-                          ? "پرداخت شده"
-                          : isThisBillLoading
-                            ? "در حال اتصال..."
-                            : "پرداخت این قبض"}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-                  </>
+              </>
               )}
+            </div>
+          </motion.article>
+
+          {/* خدمات نوسازی */}
+          <motion.article
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="soft-card mesh-panel overflow-hidden"
+          >
+            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-foreground">خدمات نوسازی</h2>
+              </div>
+              <HelpButton
+                title="خدمات نوسازی"
+                desc="خدمات و مبالغ خدمات نوسازی مربوط به پرونده انتخاب‌شده در این جدول نمایش داده می‌شود."
+              />
+            </div>
+            <div className="responsive-table-shell p-3 sm:p-4">
+              <table className="w-full min-w-[480px] border-separate border-spacing-0 text-xs md:text-sm">
+                <thead>
+                  <tr className="bg-muted/40 text-muted-foreground">
+                    <th className="rounded-r-xl p-3 text-right font-medium">عنوان خدمت</th>
+                    <th className="rounded-l-xl p-3 text-right font-medium">مقدار / مبلغ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isRenovationLoading ? (
+                    <tr>
+                      <td colSpan={2} className="p-5 text-center text-muted-foreground">
+                        <span className="inline-flex items-center gap-2">
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
+                          در حال دریافت خدمات نوسازی...
+                        </span>
+                      </td>
+                    </tr>
+                  ) : renovationServices.length > 0 ? (
+                    renovationServices.map((service, index) => (
+                      <tr
+                        key={`${service.label}-${index}`}
+                        className="border-b border-border/40 transition-colors hover:bg-muted/20"
+                      >
+                        <td className="p-3 font-medium text-foreground">{service.label}</td>
+                        <td className="p-3 text-foreground/80" dir="auto">
+                          {service.value}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={2} className="p-5 text-center text-muted-foreground">
+                        رکورد خدمات نوسازی برای این کد دریافت نشد.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </motion.article>
 

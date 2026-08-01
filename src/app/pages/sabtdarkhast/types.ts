@@ -5,7 +5,7 @@ export interface SabtDarkhastPageProps {
   toggleTheme: () => void;
 }
 
-export type StepState = "form" | "upload" | "success";
+export type StepState = "form" | "registered" | "upload" | "success";
 
 export interface OwnerFormState {
   identityType: "1" | "2";

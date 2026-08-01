@@ -222,6 +222,9 @@ export function Footer() {
               <p className="text-center text-sm text-white/80 md:text-right">
                 © 1405 {information.title}. تمامی حقوق محفوظ است.
               </p>
+              <p className="text-center text-sm text-white/80 md:text-right">
+                طراحی شده توسط شرکت تحلیلگران آمارد
+              </p>
               <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/80 md:justify-end">
                 {footerLinks.legal.map((item) => (
                   <a

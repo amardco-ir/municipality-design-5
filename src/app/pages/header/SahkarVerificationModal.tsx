@@ -56,6 +56,30 @@ const MESSAGES = {
 
 const onlyDigits = (value: string) => value.replace(/\D/g, "");
 
+const MaskedPhoneNumber = ({
+  value,
+  className = "",
+}: {
+  value: string;
+  className?: string;
+}) => {
+  const cleaned = onlyDigits(value);
+  const prefix = cleaned.slice(0, 4);
+  const suffix = cleaned.slice(-2);
+
+  return (
+    <span
+      dir="ltr"
+      style={{ direction: "ltr", unicodeBidi: "isolate" }}
+      className={`inline-flex flex-row items-center whitespace-nowrap ${className}`}
+    >
+      <span>{prefix}</span>
+      <span aria-hidden="true">****</span>
+      <span>{suffix}</span>
+    </span>
+  );
+};
+
 const parseApiResponse = async (response: Response): Promise<ApiResponse> => {
   const text = await response.text().catch(() => "");
   if (!text.trim()) return {};
@@ -319,11 +343,6 @@ export function SahkarVerificationModal({
     return () => window.clearTimeout(timeoutId);
   }, [step]);
 
-  const formatPhoneDisplay = (value: string) => {
-    const cleaned = onlyDigits(value);
-    return `${cleaned.slice(0, 4)}****${cleaned.slice(-2)}`;
-  };
-
   const enteredCode = code.join("");
 
   return (
@@ -351,7 +370,7 @@ export function SahkarVerificationModal({
                   </p>
                   <div className="mt-2 flex items-center gap-2">
                     <Phone className="h-4 w-4 text-primary" />
-                    <p className="font-medium">{formatPhoneDisplay(mobile)}</p>
+                    <MaskedPhoneNumber value={mobile} className="font-medium" />
                   </div>
                 </div>
 
@@ -388,9 +407,9 @@ export function SahkarVerificationModal({
                   <p className="text-sm text-muted-foreground">
                     {MESSAGES.codeSentPrefix}
                   </p>
-                  <p className="mt-1 font-medium">
-                    {formatPhoneDisplay(mobile)}
-                  </p>
+                  <div className="mt-1 flex justify-center font-medium">
+                    <MaskedPhoneNumber value={mobile} />
+                  </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {MESSAGES.codeSentSuffix}
                   </p>
