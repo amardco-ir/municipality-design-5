@@ -40,7 +40,7 @@ export function MobileMenu({
           exit={{ opacity: 0, y: -10 }}
           className="container mx-auto mt-2 px-0 md:px-2 min-[1281px]:hidden"
         >
-          <div className="nav-shell max-h-[calc(100dvh-6rem)] overflow-hidden">
+          <div className="max-h-[calc(100dvh-6rem)] overflow-hidden rounded-[calc(var(--radius)+10px)] border border-border bg-card shadow-[0_16px_34px_rgba(6,31,27,0.16)]">
             <nav className="flex max-h-[calc(100dvh-6rem)] flex-col gap-2 overflow-y-auto p-3 sm:p-4">
               {menuItems.map((item, index) => {
                 const isActive = item.href === activeMenuItem;
@@ -95,7 +95,7 @@ export function MobileMenu({
                             transition={{ duration: 0.18 }}
                             className="overflow-hidden"
                           >
-                            <div className="mt-1 grid gap-1 rounded-xl border border-border/60 bg-background/55 p-1.5">
+                            <div className="mt-1 grid gap-1 rounded-xl border border-border bg-background p-1.5">
                               <a
                                 href={item.href}
                                 onClick={() => onMenuItemClick(item.href)}

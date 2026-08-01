@@ -303,10 +303,6 @@ export function LoginModal({
                     setRegError("شماره موبایل معتبر نیست.");
                     return;
                   }
-                  if (!regEmail.trim()) {
-                    setRegError("ایمیل را وارد کنید.");
-                    return;
-                  }
                   if (
                     regEmail.trim() &&
                     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())
@@ -322,8 +318,8 @@ export function LoginModal({
                     setRegError("تاریخ تولد شمسی را انتخاب کنید.");
                     return;
                   }
-                  if (regPassword.length < 8) {
-                    setRegError("رمز عبور باید حداقل ۸ کاراکتر باشد.");
+                  if (regPassword.length < 3) {
+                    setRegError("رمز عبور باید حداقل ۳ کاراکتر باشد.");
                     return;
                   }
                   if (regPassword !== regConfirmPassword) {
@@ -335,6 +331,7 @@ export function LoginModal({
                   try {
                     const registerUsername = regUsername.trim();
                     const registerPassword = regPassword;
+                    const registerEmail = regEmail.trim();
                     const authToken = localStorage
                       .getItem(AUTH_TOKEN_KEY)
                       ?.replace(/^Bearer\s+/i, "");
@@ -355,7 +352,7 @@ export function LoginModal({
                         phoneNumber: regPhone.trim(),
                         password: registerPassword,
                         repeatPassword: regConfirmPassword,
-                        email: regEmail.trim(),
+                        ...(registerEmail ? { email: registerEmail } : {}),
                         address: regAddress.trim(),
                         birthDay: regBirthDay,
                       }),
@@ -526,7 +523,7 @@ export function LoginModal({
                     type="password"
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                    placeholder="حداقل ۸ کاراکتر"
+                    placeholder="حداقل ۳ کاراکتر"
                     disabled={regLoading}
                     className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60"
                   />
