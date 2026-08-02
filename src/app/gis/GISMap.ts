@@ -317,18 +317,36 @@ export class GISMap {
   }
 
   private async getMelk(cNosazi: string): Promise<any> {
-    if (!this.isValidCNosaziMelk(cNosazi)) {
+    // If the incoming code is not valid, try normalizing by forcing
+    // the last three parts to zero (for building/shop/apartment codes)
+    const normalized = (() => {
+      try {
+        const parts = String(cNosazi).trim().split("-");
+        if (parts.length === 7 && parts.every((p) => /^\d+$/.test(p))) {
+          const p = parts.slice();
+          p[4] = "0";
+          p[5] = "0";
+          p[6] = "0";
+          return p.join("-");
+        }
+      } catch {
+        /* ignore */
+      }
+      return cNosazi;
+    })();
+
+    if (!this.isValidCNosaziMelk(normalized)) {
       throw new Error(`کد نوسازی (\u202A${cNosazi}\u202C) معتبر نیست!`); //Pr
     }
 
     const result = await this.selectByAttribute(
       this.melkLayer,
       this.cNosaziField,
-      cNosazi,
+      normalized,
     );
     if (!result.length)
       throw new Error(
-        `ملکی با کد نوسازی (\u202A${cNosazi}\u202C) در نقشه یافت نشد.`,
+        `ملکی با کد نوسازی (\u202A${normalized}\u202C) در نقشه یافت نشد.`,
       ); //Pr
     return result[0];
   }

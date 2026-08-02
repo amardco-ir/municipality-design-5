@@ -580,8 +580,8 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
                 to="/"
                 className="header-action-btn inline-flex items-center gap-2 px-3"
               >
-                <ArrowRight className="h-4 w-4" />
-                <span className="hidden text-sm md:block">بازگشت</span>
+                <ArrowRight className="hidden md:block h-4 w-4" />
+                <span className="block md:hidden text-sm">بازگشت</span>
               </Link>
 
               <h1 className="text-sm font-bold text-foreground md:text-base">

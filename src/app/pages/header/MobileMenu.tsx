@@ -152,35 +152,7 @@ export function MobileMenu({
                 );
               })}
 
-              <div className="grid grid-cols-1 gap-2 border-t border-border/70 pt-3 sm:grid-cols-2">
-                {isAuthenticated && (
-                  <button
-                    type="button"
-                    onClick={onNotificationsClick}
-                    className="flex items-center justify-between gap-3 rounded-xl bg-[var(--primary-soft)] px-4 py-3 text-sm text-foreground transition-colors hover:bg-[var(--primary-soft-strong)]"
-                  >
-                    <span className="inline-flex min-w-0 items-center gap-2">
-                      <Bell className="h-4 w-4 shrink-0" />
-                      <span>اعلان‌ها</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
-                      {unreadCount}
-                      {unreadCount > 0 && (
-                        <span className="h-2 w-2 rounded-full bg-primary" />
-                      )}
-                    </span>
-                  </button>
-                )}
-
-                <Link
-                  to="/profile"
-                  onClick={onProfileClick}
-                  className="flex items-center gap-2 rounded-xl bg-muted px-4 py-3 text-sm text-foreground transition-colors hover:bg-[var(--primary-soft)]"
-                >
-                  <UserCircle2 className="h-4 w-4" />
-                  <span>پروفایل من</span>
-                </Link>
-              </div>
+              {/* login/profile/notifications intentionally moved to header on small screens */}
             </nav>
           </div>
         </motion.div>

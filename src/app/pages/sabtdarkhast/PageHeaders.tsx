@@ -32,16 +32,16 @@ export function SabtdarkhastFormHeader({
                 onClick={onBackToForm}
                 className="header-action-btn inline-flex items-center gap-1.5 px-2 sm:px-3"
               >
-                <ArrowRight className="h-4 w-4" />
-                <span className="hidden text-sm sm:block">بازگشت</span>
+                <ArrowRight className="hidden sm:block h-4 w-4" />
+                <span className="block sm:hidden text-sm">بازگشت</span>
               </button>
             ) : (
               <Link
                 to="/"
                 className="header-action-btn inline-flex items-center gap-1.5 px-2 sm:px-3"
               >
-                <ArrowRight className="h-4 w-4" />
-                <span className="hidden text-sm sm:block">بازگشت</span>
+                <ArrowRight className="hidden sm:block h-4 w-4" />
+                <span className="block sm:hidden text-sm">بازگشت</span>
               </Link>
             )}
             <h1 className="truncate px-2 text-xs font-bold text-foreground sm:text-sm md:text-base">

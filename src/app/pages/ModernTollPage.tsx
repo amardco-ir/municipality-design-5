@@ -836,10 +836,8 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     : !servicePaymentIdentifiers
       ? "شناسه قبض و شناسه پرداخت برای این خدمت دریافت نشده است."
       : "پس از دریافت توکن، به درگاه امن آسان‌پرداخت منتقل می‌شوید.";
-  const currentPaymentError =
-    paymentErrorBillIndex === 0 ? paymentError : "";
-  const servicePaymentError =
-    paymentErrorBillIndex === 1 ? paymentError : "";
+  const currentPaymentError = paymentErrorBillIndex === 0 ? paymentError : "";
+  const servicePaymentError = paymentErrorBillIndex === 1 ? paymentError : "";
 
   // GIS Parameters
   const mapRef = useRef<MapHandle>(null);
@@ -907,8 +905,8 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                 to="/"
                 className="header-action-btn inline-flex items-center gap-2 px-3"
               >
-                <ArrowRight className="h-4 w-4" />
-                <span className="hidden text-sm md:block">بازگشت</span>
+                <ArrowRight className="hidden md:block h-4 w-4" />
+                <span className="block md:hidden text-sm">بازگشت</span>
               </Link>
               <h1 className="text-sm font-bold text-foreground md:text-base">
                 عوارض نوسازی
@@ -1289,13 +1287,10 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                         key={`${service.label}-${index}`}
                         className="border-b border-border/40 transition-colors hover:bg-muted/20"
                       >
-                        <td className="p-3 font-medium text-foreground">
-                          {service.label}
+                        <td className="p-3 text-muted-foreground text-right">
+                          {service.label} :
                         </td>
-                        <td
-                          className="p-3 text-foreground/80 flex justify-center"
-                          dir="auto"
-                        >
+                        <td className="p-3 font-medium text-foreground/80">
                           {service.value}
                         </td>
                       </tr>

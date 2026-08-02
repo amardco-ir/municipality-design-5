@@ -38,9 +38,12 @@ function PageHeader({
       <div className="container mx-auto px-0 md:px-2 lg:px-6">
         <div className="nav-shell">
           <div className="flex h-16 items-center justify-between gap-2 px-3 md:h-20 md:px-4">
-            <Link to="/" className="header-action-btn inline-flex items-center gap-2 px-3">
-              <ArrowRight className="h-4 w-4" />
-              <span className="text-sm">بازگشت</span>
+            <Link
+              to="/"
+              className="header-action-btn inline-flex items-center gap-2 px-3"
+            >
+              <ArrowRight className="hidden sm:block h-4 w-4" />
+              <span className="block sm:hidden text-sm">بازگشت</span>
             </Link>
 
             <h1 className="truncate text-sm font-bold text-foreground md:text-base">
@@ -62,7 +65,11 @@ function PageHeader({
                   transition={{ duration: 0.15 }}
                   className="inline-flex"
                 >
-                  {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                  {isDark ? (
+                    <Sun className="h-5 w-5" />
+                  ) : (
+                    <Moon className="h-5 w-5" />
+                  )}
                 </motion.span>
               </AnimatePresence>
             </button>

@@ -9,6 +9,15 @@ import {
   Twitter,
 } from "lucide-react";
 import { Link } from "react-router";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "./ui/dialog";
+import { useAuthModal } from "./AuthContext";
 import { serviceItems } from "../data/services";
 import {
   emptySiteInformation,
@@ -36,6 +45,9 @@ export function Footer() {
   const [information, setInformation] = useState<SiteInformation>(
     fallbackFooterInformation,
   );
+
+  const { isAuthenticated, setIsLoginModalOpen } = useAuthModal();
+  const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -140,6 +152,12 @@ export function Footer() {
                   <Link
                     to={service.href}
                     className="text-sm text-white/85 transition-colors hover:text-white"
+                    onClick={(e) => {
+                      if (!isAuthenticated) {
+                        e.preventDefault();
+                        setIsAuthPromptOpen(true);
+                      }
+                    }}
                   >
                     {service.title}
                   </Link>
@@ -240,6 +258,37 @@ export function Footer() {
           </div>
         </div>
       </div>
+      {isAuthPromptOpen && (
+        <Dialog open={isAuthPromptOpen} onOpenChange={setIsAuthPromptOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>برای وارد شدن ابتدا لاگین کنید</DialogTitle>
+            </DialogHeader>
+            <DialogDescription>
+              برای استفاده از این خدمت باید ابتدا وارد حساب کاربری خود شوید.
+            </DialogDescription>
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => setIsAuthPromptOpen(false)}
+                className="rounded-xl px-4 py-2 text-sm bg-white/6"
+              >
+                بستن
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAuthPromptOpen(false);
+                  setIsLoginModalOpen(true);
+                }}
+                className="btn-gradient inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-primary-foreground"
+              >
+                ورود
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </footer>
   );
 }

@@ -22,7 +22,8 @@ export function NewsDetailPage({ isDark, toggleTheme }: NewsDetailPageProps) {
         const items = await fetchNews(controller.signal);
         setNews(items.find((item) => item.slug === slug) ?? null);
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
         setNews(null);
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
@@ -47,8 +48,8 @@ export function NewsDetailPage({ isDark, toggleTheme }: NewsDetailPageProps) {
                 to="/"
                 className="header-action-btn inline-flex items-center gap-2 px-3"
               >
-                <ArrowRight className="h-4 w-4" />
-                <span className="text-sm">بازگشت </span>
+                <ArrowRight className="hidden sm:block h-4 w-4" />
+                <span className="block sm:hidden text-sm">بازگشت</span>
               </Link>
 
               <div className="min-w-0 text-center">

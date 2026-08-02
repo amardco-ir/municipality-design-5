@@ -848,7 +848,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
                       setIsAllNotificationsOpen(false);
                       setIsNotificationsOpen((prev) => !prev);
                     }}
-                    className="header-action-btn relative hidden min-[1281px]:flex"
+                    className="header-action-btn relative"
                     aria-label="اعلان‌ها"
                     aria-expanded={isNotificationsOpen}
                     aria-controls="notifications-panel"
@@ -875,7 +875,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
               <Link
                 to="/profile"
                 onClick={handleProfileClick}
-                className="header-action-btn hidden items-center gap-2 px-3 min-[1281px]:inline-flex"
+                className="header-action-btn items-center gap-2 px-3"
                 aria-label="پروفایل کاربر"
               >
                 <UserCircle2 className="h-5 w-5" />

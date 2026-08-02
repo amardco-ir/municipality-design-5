@@ -46,7 +46,11 @@ import {
   getApiValue,
   type ApiResponse,
 } from "../utils/apiResponseHandler";
-import { PropertyTreeList, type PropertyItem, type PropertyTreeItem } from "../components/PropertyTreeList";
+import {
+  PropertyTreeList,
+  type PropertyItem,
+  type PropertyTreeItem,
+} from "../components/PropertyTreeList";
 import { flattenApiPropertyFiles } from "../data/propertyFiles";
 import Map from "../components/Map";
 import type { MapHandle } from "../components/Map/types";
@@ -269,7 +273,10 @@ export function PropertyInquiryPage({
     resetRetreat();
   };
 
-  const handlePropertyTreeSelect = (property: PropertyItem, treeItem: PropertyTreeItem) => {
+  const handlePropertyTreeSelect = (
+    property: PropertyItem,
+    treeItem: PropertyTreeItem,
+  ) => {
     const codes: RenewalCodes = {
       region: "",
       neighborhood: "",
@@ -279,9 +286,12 @@ export function PropertyInquiryPage({
       apartment: "",
       guild: "",
     };
-    
+
     // Parse the fullCode to extract codes
-    const parts = treeItem.fullCode.split("-").map(p => p.trim()).filter(Boolean);
+    const parts = treeItem.fullCode
+      .split("-")
+      .map((p) => p.trim())
+      .filter(Boolean);
     if (parts.length >= 7) {
       codes.region = parts[0];
       codes.neighborhood = parts[1];
@@ -291,7 +301,7 @@ export function PropertyInquiryPage({
       codes.apartment = parts[5];
       codes.guild = parts[6];
     }
-    
+
     const subProp: SubProperty = {
       id: treeItem.id,
       fullCode: treeItem.fullCode,
@@ -299,7 +309,7 @@ export function PropertyInquiryPage({
       description: treeItem.text,
       codes: codes,
     };
-    
+
     selectPropertyFromList(subProp);
     void loadRetreatData(subProp.fullCode);
   };
@@ -369,13 +379,15 @@ export function PropertyInquiryPage({
           // Try to restore previously selected property from localStorage
           const storedFullCode = getSelectedPropertyFullCode();
           let selectedProperty: SubProperty | null = null;
-          
+
           if (storedFullCode) {
             const normalizedStoredCode = normalizeRenewalCode(storedFullCode);
             // Find matching property by fullCode
-            selectedProperty = mapped.find(item => 
-              normalizeRenewalCode(item.fullCode) === normalizedStoredCode
-            ) ?? null;
+            selectedProperty =
+              mapped.find(
+                (item) =>
+                  normalizeRenewalCode(item.fullCode) === normalizedStoredCode,
+              ) ?? null;
 
             if (!selectedProperty) {
               selectedProperty = {
@@ -389,7 +401,7 @@ export function PropertyInquiryPage({
               };
             }
           }
-          
+
           // If no stored property found, use the first one
           const propertyToSelect = selectedProperty ?? mapped[0];
           setSelectedSubProperty(propertyToSelect);
@@ -460,8 +472,8 @@ export function PropertyInquiryPage({
                 to="/"
                 className="header-action-btn inline-flex items-center gap-2 px-3"
               >
-                <ArrowRight className="h-4 w-4" />
-                <span className="hidden text-sm md:block">بازگشت</span>
+                <ArrowRight className="hidden md:block h-4 w-4" />
+                <span className="block md:hidden text-sm">بازگشت</span>
               </Link>
 
               <h1 className="text-sm font-bold text-foreground md:text-base">
@@ -682,7 +694,9 @@ export function PropertyInquiryPage({
               <button
                 type="button"
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-                onClick={() => mapRef.current?.selectMelkByCodeNosazi(codeNosazi)}
+                onClick={() =>
+                  mapRef.current?.selectMelkByCodeNosazi(codeNosazi)
+                }
                 title="موقعیت ملک"
               >
                 <MapPinHouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
