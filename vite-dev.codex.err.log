@@ -1704,3 +1704,6 @@ vite.config.ts:23:6: ERROR: The symbol "DEFAULT_PAYMENT_API_BASE_URL" has alread
 vite.config.ts:24:6: ERROR: The symbol "DEFAULT_RENOVATION_BILL_API_BASE_URL" has already been declared
 vite.config.ts:25:6: ERROR: The symbol "DEFAULT_SMS_API_BASE_URL" has already been declared
 [2m11:05:11 AM[22m [31m[1m[vite][22m[39m server restart failed
+[31mfailed to load config from C:\Users\11\Desktop\new shahrvandyar\municipality-design-5\vite.config.ts[39m
+[2m11:14:41 AM[22m [31m[1m[vite][22m[39m DEFAULT_API_BASE_URL is not defined
+[2m11:14:41 AM[22m [31m[1m[vite][22m[39m server restart failed
