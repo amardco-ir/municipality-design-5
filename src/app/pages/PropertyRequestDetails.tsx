@@ -14,7 +14,7 @@ import {
   ArrowRight,
   Sun,
   Moon,
-  LayoutGrid,  
+  LayoutGrid,
   MapPinHouse,
   Upload,
 } from "lucide-react";
@@ -32,7 +32,11 @@ import {
   type ApiResponse,
 } from "../utils/apiResponseHandler";
 import { apiFetch, dotNet10ApiFetch } from "../data/api";
-import { PropertyTreeList, type PropertyItem, type PropertyTreeItem } from "../components/PropertyTreeList";
+import {
+  PropertyTreeList,
+  type PropertyItem,
+  type PropertyTreeItem,
+} from "../components/PropertyTreeList";
 import { flattenApiPropertyFiles } from "../data/propertyFiles";
 
 import { useRef } from "react";
@@ -91,7 +95,16 @@ const getUploadContext = (...values: any[]): UploadContext => {
   };
 
   return {
-    shop: firstValue(["shop", "Shop", "shopId", "ShopId", "malekId", "MalekId", "id", "Id"]),
+    shop: firstValue([
+      "shop",
+      "Shop",
+      "shopId",
+      "ShopId",
+      "malekId",
+      "MalekId",
+      "id",
+      "Id",
+    ]),
     codeNodeTree:
       firstValue(["codeNodeTree", "CodeNodeTree", "codeTree", "CodeTree"]) ||
       firstValue(["id", "Id"]),
@@ -451,25 +464,24 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
           ? fileValue
           : (fileValue?.items ?? fileValue?.data ?? fileValue?.files ?? []);
 
-        const mappedProperties: OwnerPropertyItem[] = flattenApiPropertyFiles(rawList).map(
-          (item: any, index: number) => ({
-            id: String(item.Id ?? item.id ?? index),
-            fullCode: item.codeN ?? item.fullCode ?? item.codeNosazi ?? "—",
-            type: item.type ?? "ملک",
-            ownerName: getOwnerNameFromItem(item),
-            description:
-              getTextValue(item.tvItems?.[0]?.Text?.trim()) ||
-              getTextValue(item.codeN ?? item.codeNosazi) ||
-              "بدون توضیحات",
-            raw: item,
-          }),
-        );
+        const mappedProperties: OwnerPropertyItem[] = flattenApiPropertyFiles(
+          rawList,
+        ).map((item: any, index: number) => ({
+          id: String(item.Id ?? item.id ?? index),
+          fullCode: item.codeN ?? item.fullCode ?? item.codeNosazi ?? "—",
+          type: item.type ?? "ملک",
+          ownerName: getOwnerNameFromItem(item),
+          description:
+            getTextValue(item.tvItems?.[0]?.Text?.trim()) ||
+            getTextValue(item.codeN ?? item.codeNosazi) ||
+            "بدون توضیحات",
+          raw: item,
+        }));
 
         setOwnerProperties(mappedProperties);
         if (mappedProperties[0]) {
           const storedFullCode = getSelectedPropertyFullCode()?.trim();
-          const codeToSelect =
-            storedFullCode || mappedProperties[0].fullCode;
+          const codeToSelect = storedFullCode || mappedProperties[0].fullCode;
           const propertyToSelect =
             mappedProperties.find(
               (property) => property.fullCode.trim() === codeToSelect,
@@ -477,7 +489,9 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
 
           setSelectedCodeNosazi(codeToSelect);
           setSearchValues(toSearchValuesFromCode(codeToSelect));
-          setUploadContext(getUploadContext(propertyToSelect, propertyToSelect.raw));
+          setUploadContext(
+            getUploadContext(propertyToSelect, propertyToSelect.raw),
+          );
           void fetchRequestData(codeToSelect);
         }
       } catch (error) {
@@ -504,7 +518,10 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
     void fetchRequestData(codeNosazi);
   };
 
-  const handlePropertyTreeSelect = (property: PropertyItem, treeItem: PropertyTreeItem) => {
+  const handlePropertyTreeSelect = (
+    property: PropertyItem,
+    treeItem: PropertyTreeItem,
+  ) => {
     const codeNosazi = treeItem.fullCode;
     setSelectedCodeNosazi(codeNosazi);
     setSearchValues(toSearchValuesFromCode(codeNosazi));
@@ -603,10 +620,10 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
       <main className="container mx-auto space-y-6 px-2 pt-10 md:px-4 md:pt-10 lg:px-6">
         <motion.article className="soft-card mesh-panel overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold">جستجو</h2>
-              </div>
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-bold">جستجو</h2>
+            </div>
             <HelpButton
               title="جستجو"
               desc="کد نوسازی را کامل وارد کنید و دکمه جستجو را بزنید تا درخواست‌های همان پرونده دریافت شود. اگر از لیست پرونده‌ها موردی را انتخاب کنید، کد آن به‌صورت خودکار در فرم قرار می‌گیرد."
@@ -643,10 +660,10 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
 
         <motion.article className="soft-card mesh-panel overflow-hidden">
           <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold">پرونده های زیرمجموعه</h2>
-              </div>
+            <div className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-bold">پرونده های زیرمجموعه</h2>
+            </div>
             <HelpButton
               title="پرونده های زیرمجموعه"
               desc="پرونده‌های مرتبط با حساب شما در این بخش نمایش داده می‌شود. با انتخاب هر پرونده، کد نوسازی همان پرونده برای جستجو آماده می‌شود و اطلاعات درخواست‌های آن قابل دریافت است."
@@ -701,10 +718,14 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
               <table className="w-full min-w-[560px] border-separate border-spacing-0 text-xs md:text-sm">
                 <thead>
                   <tr className="bg-muted/40 text-muted-foreground">
-                    <th className="rounded-r-xl p-2.5 text-right font-medium">کد</th>
+                    <th className="rounded-r-xl p-2.5 text-right font-medium">
+                      کد
+                    </th>
                     <th className="p-2.5 text-right font-medium">عنوان</th>
                     <th className="p-2.5 text-right font-medium">وضعیت</th>
-                    <th className="rounded-l-xl p-2.5 text-right font-medium">تاریخ</th>
+                    <th className="rounded-l-xl p-2.5 text-right font-medium">
+                      تاریخ
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -732,7 +753,10 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
                           : ""
                       }`}
                     >
-                      <td className="whitespace-nowrap p-2.5 font-medium" dir="ltr">
+                      <td
+                        className="whitespace-nowrap p-2.5 font-medium"
+                        dir="ltr"
+                      >
                         {row.code}
                       </td>
                       <td className="max-w-[180px] whitespace-normal break-words p-2.5 leading-6">
@@ -747,7 +771,10 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
                       >
                         {row.status}
                       </td>
-                      <td className="whitespace-nowrap p-2.5 text-left" dir="ltr">
+                      <td
+                        className="whitespace-nowrap p-2.5 text-left"
+                        dir="ltr"
+                      >
                         {row.date}
                       </td>
                     </tr>
@@ -782,13 +809,19 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
                 <table className="w-full min-w-[980px] border-separate border-spacing-0 text-xs">
                   <thead>
                     <tr className="bg-muted/40 text-muted-foreground">
-                      <th className="w-28 rounded-r-xl p-3 text-right font-medium">شماره</th>
+                      <th className="w-28 rounded-r-xl p-3 text-right font-medium">
+                        شماره
+                      </th>
                       <th className="w-40 p-3 text-right font-medium">نوع</th>
                       <th className="w-36 p-3 text-right font-medium">مرحله</th>
-                      <th className="w-36 p-3 text-right font-medium">گیرنده</th>
+                      <th className="w-36 p-3 text-right font-medium">
+                        گیرنده
+                      </th>
                       <th className="w-40 p-3 text-right font-medium">وضعیت</th>
                       <th className="w-28 p-3 text-right font-medium">تاریخ</th>
-                      <th className="min-w-[260px] rounded-l-xl p-3 text-right font-medium">توضیحات</th>
+                      <th className="min-w-[260px] rounded-l-xl p-3 text-right font-medium">
+                        توضیحات
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -797,7 +830,10 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
                         key={detail.id}
                         className="border-b border-border/40 align-top transition-colors hover:bg-muted/20"
                       >
-                        <td className="whitespace-nowrap p-3 font-medium" dir="ltr">
+                        <td
+                          className="whitespace-nowrap p-3 font-medium"
+                          dir="ltr"
+                        >
                           {detail.requestCode}
                         </td>
                         <td className="whitespace-normal break-words p-3 leading-6">
@@ -827,7 +863,10 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
                             )}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap p-3 text-left" dir="ltr">
+                        <td
+                          className="whitespace-nowrap p-3 text-left"
+                          dir="ltr"
+                        >
                           {detail.date}
                         </td>
                         <td className="whitespace-normal break-words p-3 leading-6 text-foreground/80">
@@ -846,13 +885,13 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
           </motion.article>
         </div>
 
-        
         {/* نقشه */}
         <motion.article
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="soft-card mesh-panel group relative h-64 overflow-hidden sm:h-80 md:h-[400px]">
+          className="soft-card mesh-panel group relative h-64 overflow-hidden sm:h-80 md:h-[400px]"
+        >
           <button
             type="button"
             onClick={() =>
@@ -864,7 +903,7 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
             className="absolute right-4 top-4 z-20 inline-flex items-center gap-1 rounded-lg border border-primary/35 bg-card/90 px-2.5 py-1 text-[10px] font-bold text-primary shadow-lg transition-colors hover:bg-card md:text-xs"
           >
             <Info className="h-3.5 w-3.5" /> راهنما
-          </button>    
+          </button>
           <div className="absolute inset-0 bg-slate-800">
             <Map ref={mapRef} autoSelectCode={fullCode} />
             {/* {activeProperty && (
@@ -895,53 +934,63 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
               </div>*/}
           </div>
           <div className="absolute left-3 top-2 flex flex-col gap-2">
-            <button 
+            <button
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
               onClick={() => mapRef.current?.zoomIn()}
-              title="بزرگ‌نمایی">
-                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              title="بزرگ‌نمایی"
+            >
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
-            <button 
+            <button
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
               onClick={() => mapRef.current?.zoomOut()}
-              title="کوچک‌نمایی">
-                <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              title="کوچک‌نمایی"
+            >
+              <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
-            <button 
+            <button
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
               onClick={() => mapRef.current?.goHome()}
-              title="بازگشت به نمای اصلی">
-                <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              title="بازگشت به نمای اصلی"
+            >
+              <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
-            <button          
+            <button
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
               onClick={() => mapRef.current?.toggleBasemap()}
-              title="تغییر نقشه زمینه">
-              <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4"/>
+              title="تغییر نقشه زمینه"
+            >
+              <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </div>
           <div className="absolute right-3 top-12 flex flex-col gap-2">
-          {/*<div className="absolute right-3 top-12 flex flex-col gap-2 sm:left-4 sm:top-12">*/}
-            <button 
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-            onClick={() => {mapRef.current?.selectMelkByCodeNosazi(fullCode);}}
-            title="موقعیت من">
+            {/*<div className="absolute right-3 top-12 flex flex-col gap-2 sm:left-4 sm:top-12">*/}
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+              onClick={() => {
+                mapRef.current?.selectMelkByCodeNosazi(fullCode);
+              }}
+              title="موقعیت من"
+            >
               <MapPinHouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
-            <button 
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
-            onClick={() => mapRef.current?.clearGraphics()}
-            title="پاک کردن انتخاب">
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
+              onClick={() => mapRef.current?.clearGraphics()}
+              title="پاک کردن انتخاب"
+            >
               <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            </button>          
-          </div>       
+            </button>
+          </div>
         </motion.article>
       </main>
 
       {/* مودال راهنما */}
       <DefectUploadModal
         isOpen={isDefectUploadOpen}
-        requestId={selectedRequest?.code ?? selectedRequestId}
+        requestId={
+          selectedRequest?.id ?? selectedRequest?.code ?? selectedRequestId
+        }
         shop={uploadContext.shop}
         codeN={selectedCodeNosazi}
         codeNodeTree={uploadContext.codeNodeTree}

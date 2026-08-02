@@ -46,16 +46,20 @@ export const isApiSuccess = (response: ApiResponse): boolean => {
  * دریافت پیام خطا از پاسخ API
  */
 export const getApiErrorMessage = (response: ApiResponse): string => {
-  if (response.Error?.Description) {
-    return response.Error.Description;
-  }
-  if (response.error?.description) {
-    return response.error.description;
-  }
-  if (response.error?.name) {
-    return response.error.name;
-  }
-  return "خطای نامعلوم از سرور";
+  const directMessage = [
+    response.Error?.Description,
+    response.error?.description,
+    response.error?.name,
+    (response as any)?.name,
+    (response as any)?.description,
+    (response as any)?.message,
+    (response as any)?.Message,
+  ].find(
+    (value): value is string =>
+      typeof value === "string" && value.trim() !== "",
+  );
+
+  return directMessage ?? "خطای نامعلوم از سرور";
 };
 
 /**

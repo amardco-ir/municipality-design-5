@@ -4,19 +4,24 @@ import {
   storeAuthTokens,
 } from "../utils/authStorage";
 
+// const DEFAULT_API_BASE_URL = "http://192.168.10.3:6300";
+// const DEFAULT_DOTNET10_API_BASE_URL = "http://192.168.10.3:6500";
+// const DEFAULT_PAYMENT_API_BASE_URL = "http://192.168.10.3:6500";
+// const DEFAULT_RENOVATION_BILL_API_BASE_URL = "http://192.168.10.3:5100";
+// const DEFAULT_SMS_API_BASE_URL = "http://192.168.10.3:6500";
 
-const DEFAULT_API_BASE_URL = "http://192.168.10.3:6300";
-const DEFAULT_DOTNET10_API_BASE_URL = "http://192.168.10.3:6500";
-const DEFAULT_PAYMENT_API_BASE_URL = "http://192.168.10.3:6500";
-const DEFAULT_RENOVATION_BILL_API_BASE_URL = "http://192.168.10.3:5100";
-const DEFAULT_SMS_API_BASE_URL = "http://192.168.10.3:6500";
+const DEFAULT_API_BASE_URL = "https://shahrvandyar.com/api-old";
+const DEFAULT_DOTNET10_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_PAYMENT_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_RENOVATION_BILL_API_BASE_URL =
+  "https://shahrvandyar.com/api-shahrsazi";
+const DEFAULT_SMS_API_BASE_URL = "https://shahrvandyar.com/api-core";
 
-// const DEFAULT_API_BASE_URL = "https://shahrvandyar.com/api-old";
-// const DEFAULT_DOTNET10_API_BASE_URL = "https://shahrvandyar.com/api-core";
-// const DEFAULT_PAYMENT_API_BASE_URL = "https://shahrvandyar.com/api-core";
-// const DEFAULT_RENOVATION_BILL_API_BASE_URL =
-//   "https://shahrvandyar.com/api-shahrsazi";
-// const DEFAULT_SMS_API_BASE_URL = "https://shahrvandyar.com/api-core";
+// const DEFAULT_API_BASE_URL = "http://17.16.1.16:6102";
+// const DEFAULT_DOTNET10_API_BASE_URL = "http://17.16.1.16:6101";
+// const DEFAULT_PAYMENT_API_BASE_URL = "http://17.16.1.16:6101";
+// const DEFAULT_RENOVATION_BILL_API_BASE_URL = "http://17.16.1.16:5100";
+// const DEFAULT_SMS_API_BASE_URL = "http://17.16.1.16:6101";
 
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, "");
 
@@ -64,7 +69,10 @@ const RENOVATION_BILL_API_BASE_URL = import.meta.env.DEV
 
 const SMS_API_BASE_URL = import.meta.env.DEV
   ? firstEnvUrl(import.meta.env.VITE_DEV_SMS_API_BASE_URL, "/sms-api")
-  : firstEnvUrl(import.meta.env.VITE_SMS_API_BASE_URL, DEFAULT_SMS_API_BASE_URL);
+  : firstEnvUrl(
+      import.meta.env.VITE_SMS_API_BASE_URL,
+      DEFAULT_SMS_API_BASE_URL,
+    );
 
 const DOTNET48_ACCEPT_HEADER = "text/plain";
 const REFRESH_TOKEN_ENDPOINT =
@@ -195,5 +203,8 @@ export async function smsApiFetch(endpoint: string, options?: RequestInit) {
   const normalizedEndpoint = endpoint.startsWith("/")
     ? endpoint
     : `/${endpoint}`;
-  return fetchWithTokenRefresh(`${SMS_API_BASE_URL}${normalizedEndpoint}`, options);
+  return fetchWithTokenRefresh(
+    `${SMS_API_BASE_URL}${normalizedEndpoint}`,
+    options,
+  );
 }

@@ -124,12 +124,9 @@ const getAuthTokenFromResponse = (data: ApiResponse) => {
 };
 
 const getResponseErrorMessage = (data: ApiResponse, fallback: string) => {
-  if (
-    data.Error?.Description ||
-    data.error?.description ||
-    data.error?.name
-  ) {
-    return getApiErrorMessage(data);
+  const message = getApiErrorMessage(data);
+  if (message && message !== "خطای نامعلوم از سرور") {
+    return message;
   }
 
   return fallback;
@@ -298,9 +295,7 @@ export function SahkarVerificationModal({
     setCode(nextCode);
   };
 
-  const handleHiddenKeyDown = (
-    event: ReactKeyboardEvent<HTMLInputElement>,
-  ) => {
+  const handleHiddenKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key !== "Backspace") return;
 
     setCode((prev) => {

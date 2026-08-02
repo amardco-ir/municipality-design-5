@@ -82,7 +82,17 @@ const getList = (value: any): any[] => {
 
 const mapLackDocuments = (value: any): LackDocumentItem[] =>
   getList(value).map((item: any, index: number) => ({
-    id: firstText(item.id, item.Id, item.code, item.Code, index + 1),
+    id: firstText(
+      item.id,
+      item.Id,
+      item.LackId,
+      item.lackId,
+      item.DefectId,
+      item.defectId,
+      item.code,
+      item.Code,
+      index + 1,
+    ),
     title:
       firstText(
         item.title,
@@ -122,18 +132,22 @@ const getDefectIsDefense = (value: any) => {
     if (typeof item === "number") return item === 1;
     if (typeof item === "string") {
       const normalized = item.trim().toLowerCase();
-      return normalized === "true" || normalized === "1" || normalized.includes("دفاع");
+      return (
+        normalized === "true" ||
+        normalized === "1" ||
+        normalized.includes("دفاع")
+      );
     }
     if (!item || typeof item !== "object") return false;
 
     return Boolean(
       item.IsDefense ??
-        item.isDefense ??
-        item.IsDefence ??
-        item.isDefence ??
-        item.defense ??
-        item.defence ??
-        item.isDefectDefense,
+      item.isDefense ??
+      item.IsDefence ??
+      item.isDefence ??
+      item.defense ??
+      item.defence ??
+      item.isDefectDefense,
     );
   });
 };
@@ -163,14 +177,17 @@ const readResponse = async (response: Response, fallbackMessage: string) => {
   const data: ApiResponse = normalizeApiResponse(raw);
 
   if (!response.ok || !isApiSuccess(data)) {
-    throw new Error(isApiSuccess(data) ? fallbackMessage : getApiErrorMessage(data));
+    throw new Error(
+      isApiSuccess(data) ? fallbackMessage : getApiErrorMessage(data),
+    );
   }
 
   return data;
 };
 
 const fileSize = (size: number) => {
-  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} کیلوبایت`;
+  if (size < 1024 * 1024)
+    return `${Math.max(1, Math.round(size / 1024))} کیلوبایت`;
   return `${(size / (1024 * 1024)).toFixed(1)} مگابایت`;
 };
 
@@ -198,6 +215,7 @@ export function DefectUploadModal({
 }: DefectUploadModalProps) {
   const [documents, setDocuments] = useState<LackDocumentItem[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
+  const [selectedDefectApiId, setSelectedDefectApiId] = useState("");
   const [defectIsDefense, setDefectIsDefense] = useState(false);
   const [files, setFiles] = useState<SelectedDefectFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -254,8 +272,12 @@ export function DefectUploadModal({
         if (isActive) {
           const mappedDocuments = mapLackDocuments(getApiValue(data));
           setDocuments(mappedDocuments);
-          setSelectedDocumentId(mappedDocuments[0]?.id ?? "");
+          const firstDocumentId = mappedDocuments[0]?.id ?? "";
+          setSelectedDocumentId(firstDocumentId);
           setDefectIsDefense(mappedDocuments[0]?.isDefense ?? false);
+          if (firstDocumentId) {
+            void handleDocumentSelect(firstDocumentId);
+          }
         }
       } catch (loadError) {
         if (isActive) {
@@ -278,20 +300,39 @@ export function DefectUploadModal({
 
   const handleDocumentSelect = async (documentId: string) => {
     setSelectedDocumentId(documentId);
+    setSelectedDefectApiId("");
     setDefectIsDefense(false);
     setError("");
 
-    const id = numberValue(documentId);
+    const id = textValue(documentId);
     if (!id) return;
 
     setIsLoadingDefect(true);
     try {
       const response = await apiFetch(
-        `/api/request/Defect?id=${encodeURIComponent(String(id))}`,
+        `/api/request/Defect?id=${encodeURIComponent(id)}`,
         { method: "GET", headers: getAuthHeaders() },
       );
-      const data = await readResponse(response, "خطا در دریافت وضعیت نقص مدارک.");
-      setDefectIsDefense(getDefectIsDefense(getApiValue(data)));
+      const data = await readResponse(
+        response,
+        "خطا در دریافت وضعیت نقص مدارک.",
+      );
+      const apiValue = getApiValue(data);
+      const defectItems = getList(apiValue);
+      const defectItem = defectItems[0] ?? apiValue;
+      setDefectIsDefense(getDefectIsDefense(apiValue));
+      setSelectedDefectApiId(
+        firstText(
+          defectItem?.id,
+          defectItem?.Id,
+          defectItem?.defectId,
+          defectItem?.DefectId,
+          defectItem?.RequestDefectId,
+          defectItem?.requestDefectId,
+          defectItem?.LackId,
+          defectItem?.lackId,
+        ),
+      );
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -344,8 +385,9 @@ export function DefectUploadModal({
       const selectedDocument = documents.find(
         (document) => document.id === selectedDocumentId,
       );
-      const isDefense =
-        defectIsDefense || Boolean(selectedDocument?.isDefense);
+      const isDefense = defectIsDefense || Boolean(selectedDocument?.isDefense);
+      const uploadDocumentId =
+        selectedDefectApiId || selectedDocument?.id || "";
 
       for (const selectedFile of files) {
         const formData = new FormData();
@@ -356,9 +398,9 @@ export function DefectUploadModal({
         formData.append("CodeNodeTree", codeNodeTree);
         formData.append("IsDefense", String(isDefense));
         if (selectedDocument) {
-          formData.append("DefectId", selectedDocument.id);
-          formData.append("RequestDefectId", selectedDocument.id);
-          formData.append("LackId", selectedDocument.id);
+          formData.append("DefectId", uploadDocumentId);
+          formData.append("RequestDefectId", uploadDocumentId);
+          formData.append("LackId", uploadDocumentId);
           formData.append("DefectList", selectedDocument.title);
         }
 
@@ -374,7 +416,9 @@ export function DefectUploadModal({
       setIsUploaded(true);
     } catch (uploadError) {
       setError(
-        uploadError instanceof Error ? uploadError.message : "خطا در آپلود مدارک.",
+        uploadError instanceof Error
+          ? uploadError.message
+          : "خطا در آپلود مدارک.",
       );
     } finally {
       setIsUploading(false);
@@ -422,7 +466,9 @@ export function DefectUploadModal({
             <div className="space-y-5 p-4 sm:p-5">
               <section className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-xs font-bold text-foreground">کسری مدارک</h3>
+                  <h3 className="text-xs font-bold text-foreground">
+                    کسری مدارک
+                  </h3>
                   {isLoadingDocuments && (
                     <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                       <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
@@ -438,18 +484,22 @@ export function DefectUploadModal({
                 )}
 
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {documents.map((document) => (
+                  {documents.map((document, index) => (
                     <label
                       key={document.id}
+                      htmlFor={`lack-document-${index}`}
                       className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 text-xs transition-colors ${
                         selectedDocumentId === document.id
                           ? "border-primary/60 bg-primary/5"
                           : "border-border/70 bg-card hover:border-primary/35"
                       }`}
+                      onClick={() => void handleDocumentSelect(document.id)}
                     >
                       <input
+                        id={`lack-document-${index}`}
                         type="radio"
                         name="lack-document"
+                        value={document.id}
                         checked={selectedDocumentId === document.id}
                         onChange={() => void handleDocumentSelect(document.id)}
                         className="mt-0.5 h-4 w-4 accent-primary"
@@ -483,7 +533,9 @@ export function DefectUploadModal({
               </section>
 
               <section className="space-y-3">
-                <h3 className="text-xs font-bold text-foreground">فایل‌های مدارک</h3>
+                <h3 className="text-xs font-bold text-foreground">
+                  فایل‌های مدارک
+                </h3>
                 <div
                   onDragOver={(event) => {
                     event.preventDefault();

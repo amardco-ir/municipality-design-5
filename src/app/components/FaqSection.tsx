@@ -88,10 +88,10 @@ export function FaqSection() {
             <div className="rounded-xl bg-[var(--primary-soft)] p-3 text-sm text-foreground">
               <div className="mb-1 flex items-center gap-2 font-semibold text-primary">
                 <LifeBuoy className="h-4 w-4" />
-                <span>پشتیبانی شهرداری</span>
+                <span>کارشناس شهروند یار </span>
               </div>
               <p className="text-xs text-muted-foreground md:text-sm">
-                پاسخ‌گویی تلفنی: 137 | پیگیری آنلاین از داخل پنل کاربری
+                پاسخ‌گویی تلفنی: 04137217266 
               </p>
             </div>
             <Link

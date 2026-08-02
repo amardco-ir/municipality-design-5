@@ -1,5 +1,3 @@
-
-
 // src/app/components/Header.tsx
 import {
   ClipboardEvent as ReactClipboardEvent,
@@ -138,9 +136,7 @@ const isAdminRoleValue = (value: unknown): boolean => {
     .split(/[,\s]+/)
     .map((role) => role.trim().toLowerCase())
     .filter(Boolean)
-    .some((normalized) =>
-      ADMIN_ROLE_NAMES.some((role) => normalized === role),
-    );
+    .some((normalized) => ADMIN_ROLE_NAMES.some((role) => normalized === role));
 };
 
 const getClaim = (source: any, keys: string[]) => {
@@ -203,14 +199,23 @@ const getNationalCodeFromAuthPayload = (data: any) =>
   data.nationalCode ??
   data.NationalCode;
 
-const getResponseErrorMessage = (data: any, fallback: string) =>
-  data?.error?.name ||
-  data?.error?.description ||
-  data?.Error?.Description ||
-  data?.Error?.name ||
-  data?.message ||
-  data?.Message ||
-  fallback;
+const getResponseErrorMessage = (data: any, fallback: string) => {
+  const directMessage = [
+    data?.error?.name,
+    data?.error?.description,
+    data?.Error?.Description,
+    data?.Error?.name,
+    data?.name,
+    data?.description,
+    data?.message,
+    data?.Message,
+  ].find(
+    (value): value is string =>
+      typeof value === "string" && value.trim() !== "",
+  );
+
+  return directMessage || fallback;
+};
 
 export function Header({ isDark, toggleTheme }: HeaderProps) {
   const navigate = useNavigate();
@@ -394,7 +399,10 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
       storeAuthTokens(data, String(resolvedToken));
     }
     if (resolvedNationalCode) {
-      localStorage.setItem(USER_NATIONAL_CODE_KEY, String(resolvedNationalCode));
+      localStorage.setItem(
+        USER_NATIONAL_CODE_KEY,
+        String(resolvedNationalCode),
+      );
     }
 
     localStorage.setItem(AUTH_STORAGE_KEY, "true");
@@ -412,7 +420,9 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
 
   const handleSmsLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const cleanedNationalCode = nationalCode.replace(/\D/g, "").padStart(10, "0");
+    const cleanedNationalCode = nationalCode
+      .replace(/\D/g, "")
+      .padStart(10, "0");
     const cleanedMobile = mobile.replace(/\D/g, "");
 
     if (!/^\d{10}$/.test(cleanedNationalCode)) {
@@ -716,10 +726,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
 
   useEffect(() => {
     document.body.style.overflow =
-      isMenuOpen ||
-      isAllNotificationsOpen ||
-      isLoginOpen ||
-      isForgotOpen
+      isMenuOpen || isAllNotificationsOpen || isLoginOpen || isForgotOpen
         ? "hidden"
         : "";
     return () => {
