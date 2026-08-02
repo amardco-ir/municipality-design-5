@@ -848,7 +848,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
                       setIsAllNotificationsOpen(false);
                       setIsNotificationsOpen((prev) => !prev);
                     }}
-                    className="header-action-btn relative"
+                    className="header-action-btn relative hidden min-[1281px]:flex"
                     aria-label="اعلان‌ها"
                     aria-expanded={isNotificationsOpen}
                     aria-controls="notifications-panel"

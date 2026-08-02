@@ -1764,3 +1764,36 @@ Error: connect ETIMEDOUT 17.16.1.16:6101
 [31mfailed to load config from C:\Users\11\Desktop\new shahrvandyar\municipality-design-5\vite.config.ts[39m
 [2m12:16:25 PM[22m [31m[1m[vite][22m[39m DEFAULT_API_BASE_URL is not defined
 [2m12:16:25 PM[22m [31m[1m[vite][22m[39m server restart failed
+[2m1:33:53 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /Api/PaymentAvarez/ReceiveBill?codeNosazi=2-101-27-38-0-0-0&ownerId=1[39m
+Error: read ECONNRESET
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)
+[2m1:33:53 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /Api/PaymentAvarez/ReceiveBill?codeNosazi=2-101-27-38-0-0-0&ownerId=1[39m
+Error: read ECONNRESET
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)
+[31mfailed to load config from C:\Users\11\Desktop\new shahrvandyar\municipality-design-5\vite.config.ts[39m
+[2m2:02:06 PM[22m [31m[1m[vite][22m[39m DEFAULT_API_BASE_URL is not defined
+[2m2:02:06 PM[22m [31m[1m[vite][22m[39m server restart failed
+[2m2:02:50 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/header[39m
+Error: connect ETIMEDOUT 17.16.1.16:6101
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m2:02:50 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/activities[39m
+Error: connect ETIMEDOUT 17.16.1.16:6101
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m2:02:50 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/sliders[39m
+Error: connect ETIMEDOUT 17.16.1.16:6101
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m2:02:50 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/notifications[39m
+Error: connect ETIMEDOUT 17.16.1.16:6101
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m2:02:50 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/NewsGroups[39m
+Error: connect ETIMEDOUT 17.16.1.16:6101
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m2:02:50 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/news[39m
+Error: connect ETIMEDOUT 17.16.1.16:6101
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m2:03:11 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/footer[39m
+Error: connect ETIMEDOUT 17.16.1.16:6101
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m2:03:11 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/faq[39m
+Error: connect ETIMEDOUT 17.16.1.16:6101
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
