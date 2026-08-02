@@ -1,4 +1,10 @@
-import { useEffect, useState, type ChangeEvent, type DragEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+} from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   AlertCircle,
@@ -23,6 +29,11 @@ interface LackDocumentItem {
   title: string;
   description: string;
   isDefense: boolean;
+}
+
+interface SelectedDefectFile {
+  file: File;
+  preview?: string;
 }
 
 interface DefectUploadModalProps {
@@ -76,6 +87,8 @@ const mapLackDocuments = (value: any): LackDocumentItem[] =>
       firstText(
         item.title,
         item.Title,
+        item.defectList,
+        item.DefectList,
         item.name,
         item.Name,
         item.documentTitle,
@@ -90,6 +103,8 @@ const mapLackDocuments = (value: any): LackDocumentItem[] =>
     description: firstText(
       item.description,
       item.Description,
+      item.smsMessage,
+      item.SmsMessage,
       item.tozihat,
       item.Tozihat,
       item.comment,
@@ -136,7 +151,15 @@ const getAuthHeaders = () => {
 };
 
 const readResponse = async (response: Response, fallbackMessage: string) => {
-  const raw = await response.json().catch(() => null);
+  const text = await response.text().catch(() => "");
+  let raw: unknown = null;
+  if (text) {
+    try {
+      raw = JSON.parse(text);
+    } catch {
+      raw = text;
+    }
+  }
   const data: ApiResponse = normalizeApiResponse(raw);
 
   if (!response.ok || !isApiSuccess(data)) {
@@ -151,6 +174,20 @@ const fileSize = (size: number) => {
   return `${(size / (1024 * 1024)).toFixed(1)} مگابایت`;
 };
 
+const mapSelectedFiles = (fileList: FileList | File[]): SelectedDefectFile[] =>
+  Array.from(fileList).map((file) => ({
+    file,
+    preview: file.type.startsWith("image/")
+      ? URL.createObjectURL(file)
+      : undefined,
+  }));
+
+const revokeFilePreviews = (selectedFiles: SelectedDefectFile[]) => {
+  selectedFiles.forEach((selectedFile) => {
+    if (selectedFile.preview) URL.revokeObjectURL(selectedFile.preview);
+  });
+};
+
 export function DefectUploadModal({
   isOpen,
   requestId,
@@ -162,21 +199,40 @@ export function DefectUploadModal({
   const [documents, setDocuments] = useState<LackDocumentItem[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
   const [defectIsDefense, setDefectIsDefense] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<SelectedDefectFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isLoadingDefect, setIsLoadingDefect] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
   const [isUploaded, setIsUploaded] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const clearFiles = () => {
+    setFiles((current) => {
+      revokeFilePreviews(current);
+      return [];
+    });
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((current) => {
+      const selectedFile = current[index];
+      if (selectedFile?.preview) URL.revokeObjectURL(selectedFile.preview);
+      return current.filter((_, fileIndex) => fileIndex !== index);
+    });
+  };
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      clearFiles();
+      return;
+    }
 
     setDocuments([]);
     setSelectedDocumentId("");
     setDefectIsDefense(false);
-    setFiles([]);
+    clearFiles();
     setError("");
     setIsUploaded(false);
 
@@ -195,7 +251,12 @@ export function DefectUploadModal({
           { method: "GET", headers: getAuthHeaders() },
         );
         const data = await readResponse(response, "خطا در دریافت کسری مدارک.");
-        if (isActive) setDocuments(mapLackDocuments(getApiValue(data)));
+        if (isActive) {
+          const mappedDocuments = mapLackDocuments(getApiValue(data));
+          setDocuments(mappedDocuments);
+          setSelectedDocumentId(mappedDocuments[0]?.id ?? "");
+          setDefectIsDefense(mappedDocuments[0]?.isDefense ?? false);
+        }
       } catch (loadError) {
         if (isActive) {
           setError(
@@ -243,7 +304,7 @@ export function DefectUploadModal({
   };
 
   const addFiles = (fileList: FileList | File[]) => {
-    setFiles((current) => [...current, ...Array.from(fileList)]);
+    setFiles((current) => [...current, ...mapSelectedFiles(fileList)]);
     setError("");
     setIsUploaded(false);
   };
@@ -253,7 +314,7 @@ export function DefectUploadModal({
     event.target.value = "";
   };
 
-  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
     if (event.dataTransfer.files.length) addFiles(event.dataTransfer.files);
@@ -265,6 +326,11 @@ export function DefectUploadModal({
 
     if (files.length === 0) {
       setError("لطفاً حداقل یک فایل برای آپلود انتخاب کنید.");
+      fileInputRef.current?.click();
+      return;
+    }
+    if (documents.length > 0 && !selectedDocumentId) {
+      setError("لطفاً مدرک کسری موردنظر را انتخاب کنید.");
       return;
     }
     if (!shod || !shopNumber || !codeN.trim() || !codeNodeTree.trim()) {
@@ -275,17 +341,26 @@ export function DefectUploadModal({
     setError("");
     setIsUploading(true);
     try {
+      const selectedDocument = documents.find(
+        (document) => document.id === selectedDocumentId,
+      );
       const isDefense =
-        defectIsDefense || documents.some((document) => document.isDefense);
+        defectIsDefense || Boolean(selectedDocument?.isDefense);
 
-      for (const file of files) {
+      for (const selectedFile of files) {
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", selectedFile.file);
         formData.append("Shop", String(shopNumber));
         formData.append("Shod", String(shod));
         formData.append("CodeN", codeN);
         formData.append("CodeNodeTree", codeNodeTree);
         formData.append("IsDefense", String(isDefense));
+        if (selectedDocument) {
+          formData.append("DefectId", selectedDocument.id);
+          formData.append("RequestDefectId", selectedDocument.id);
+          formData.append("LackId", selectedDocument.id);
+          formData.append("DefectList", selectedDocument.title);
+        }
 
         const response = await apiFetch("/api/archive/upload", {
           method: "POST",
@@ -295,7 +370,7 @@ export function DefectUploadModal({
         await readResponse(response, "خطا در آپلود مدارک.");
       }
 
-      setFiles([]);
+      clearFiles();
       setIsUploaded(true);
     } catch (uploadError) {
       setError(
@@ -409,14 +484,14 @@ export function DefectUploadModal({
 
               <section className="space-y-3">
                 <h3 className="text-xs font-bold text-foreground">فایل‌های مدارک</h3>
-                <label
+                <div
                   onDragOver={(event) => {
                     event.preventDefault();
                     setIsDragging(true);
                   }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
-                  className={`flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
+                  className={`flex min-h-36 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
                     isDragging
                       ? "border-primary bg-primary/5"
                       : "border-border/70 hover:border-primary/40 hover:bg-muted/20"
@@ -433,34 +508,56 @@ export function DefectUploadModal({
                       امکان انتخاب چند فایل وجود دارد
                     </p>
                   </div>
-                  <input type="file" multiple className="hidden" onChange={handleFileChange} />
-                </label>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-primary/35 bg-[var(--primary-soft)] px-4 text-xs font-bold text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Upload className="h-4 w-4" />
+                    انتخاب فایل
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </div>
 
                 {files.length > 0 && (
                   <div className="space-y-2">
-                    {files.map((file, index) => (
+                    {files.map((selectedFile, index) => (
                       <div
-                        key={`${file.name}-${file.lastModified}-${index}`}
+                        key={`${selectedFile.file.name}-${selectedFile.file.lastModified}-${index}`}
                         className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/15 px-3 py-2.5"
                       >
-                        <FileText className="h-4 w-4 shrink-0 text-primary" />
+                        {selectedFile.preview ? (
+                          <img
+                            src={selectedFile.preview}
+                            alt=""
+                            className="h-12 w-12 shrink-0 rounded-lg border border-border/60 object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                            <FileText className="h-4 w-4 text-primary" />
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-xs font-medium text-foreground">
-                            {file.name}
+                            {selectedFile.file.name}
                           </p>
                           <p className="mt-0.5 text-[10px] text-muted-foreground">
-                            {fileSize(file.size)}
+                            {fileSize(selectedFile.file.size)}
                           </p>
                         </div>
                         <button
                           type="button"
-                          onClick={() =>
-                            setFiles((current) =>
-                              current.filter((_, fileIndex) => fileIndex !== index),
-                            )
-                          }
+                          onClick={() => removeFile(index)}
                           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-destructive transition-colors hover:bg-destructive/10"
-                          aria-label={`حذف ${file.name}`}
+                          aria-label={`حذف ${selectedFile.file.name}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

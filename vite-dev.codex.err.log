@@ -1,63 +1,42 @@
-[2m5:59:20 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/header[39m
+[2m8:31:47 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/news[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:20 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/sliders[39m
+[2m8:31:47 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/faq[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:20 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/NewsGroups[39m
+[2m8:31:47 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/NewsGroups[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:20 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/notifications[39m
+[2m8:31:47 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/header[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:20 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/news[39m
+[2m8:31:47 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/sliders[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:20 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/activities[39m
+[2m8:31:47 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/footer[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:41 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/faq[39m
+[2m8:32:16 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/login[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:41 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/footer[39m
+[2m8:50:14 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/request/12739[39m
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+[2m8:51:50 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/request/Lack?shod=12739[39m
+Error: connect ETIMEDOUT 192.168.10.3:6300
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m8:57:58 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/footer[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:42 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/current[39m
+[2m8:57:58 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/Files/0200819976[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:48 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/sliders[39m
+[2m8:57:58 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/Files/0200819976[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:48 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/header[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
+[2m8:58:08 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/footer[39m
+Error: connect EHOSTUNREACH 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:48 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/faq[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:48 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/news[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m5:59:48 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/NewsGroups[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m6:00:32 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/footer[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m6:00:32 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/sliders[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m6:00:32 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/header[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m6:00:33 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/information/footer[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m6:00:33 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/news[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m6:00:33 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/faq[39m
-Error: connect ETIMEDOUT 192.168.10.3:6500
-    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
-[2m6:00:33 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/NewsGroups[39m
+[2m8:58:19 AM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/Files/0200819976[39m
 Error: connect ETIMEDOUT 192.168.10.3:6500
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
