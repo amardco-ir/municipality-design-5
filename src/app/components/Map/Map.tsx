@@ -103,6 +103,9 @@ const Map = forwardRef<MapHandle, MapProps>(({ autoSelectCode }, ref) => {
         },
         toggleBasemap(){
           return arcgisMap.current?.toggleBasemap();
+        }, 
+        mapLockExtent(){
+          return arcgisMap.current?.mapLockExtent() ?? true;
         }
     }));
 

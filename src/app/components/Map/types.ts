@@ -7,4 +7,5 @@ export interface MapHandle {
     zoomIn(): void;
     zoomOut(): void;
     toggleBasemap(): void;
+    mapLockExtent(): boolean;
 }
