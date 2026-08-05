@@ -166,7 +166,8 @@ export function MyPropertyPage({ isDark, toggleTheme }: MyPropertyPageProps) {
     setSelectedPropertyId(property.id);
     setSelectedProperty(property);
     persistSelectedPropertyByFullCode(property.fullCode, property.id);
-    setIsMapOpen(true);
+    setIsMapOpen(true);    
+    mapRef.current?.selectMelkByCodeNosazi(property.fullCode);
     setShowNoPropertyError(false);
   };
 
@@ -834,14 +835,7 @@ export function MyPropertyPage({ isDark, toggleTheme }: MyPropertyPageProps) {
                   </button>
                 </div>
                 <div className="absolute right-3 top-12 flex flex-col gap-2">
-                {/*<div className="absolute right-3 top-12 flex flex-col gap-2 sm:left-4 sm:top-12">*/}
-                  <button
-                    onClick={() => setIsMapOpen(false)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
-                    title="بستن نقشه"
-                  >
-                    <PanelBottomClose className="h-4 w-4" />
-                  </button>
+                {/*<div className="absolute right-3 top-12 flex flex-col gap-2 sm:left-4 sm:top-12">*/}                  
                   <button 
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                   onClick={() => {mapRef.current?.selectMelkByCodeNosazi(selectedProperty.fullCode);}}
@@ -853,7 +847,15 @@ export function MyPropertyPage({ isDark, toggleTheme }: MyPropertyPageProps) {
                   onClick={() => mapRef.current?.clearGraphics()}
                   title="پاک کردن انتخاب">
                     <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </button>          
+                  </button>   
+
+                  <button
+                    onClick={() => setIsMapOpen(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
+                    title="بستن نقشه"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>       
                 </div>       
               </motion.article>
             )}
