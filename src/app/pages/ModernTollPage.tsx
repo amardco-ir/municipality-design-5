@@ -91,6 +91,7 @@ interface HistoryItem {
 interface RenovationBill {
   ParvandeNo: number;
   IdMalek: number;
+  BillType: number;
   Year: number;
   ShenaseGhabz: string;
   ShenasePardakht: string;
@@ -137,7 +138,12 @@ const asArray = (value: any): any[] => {
   if (!value || typeof value !== "object") return [];
   if (Array.isArray(value.items)) return value.items;
   if (Array.isArray(value.data)) return value.data;
+  if (Array.isArray(value.result)) return value.result;
+  if (Array.isArray(value.results)) return value.results;
+  if (Array.isArray(value.list)) return value.list;
+  if (Array.isArray(value.rows)) return value.rows;
   if (Array.isArray(value.Value)) return value.Value;
+  if (Array.isArray(value.value)) return value.value;
   return [value];
 };
 
@@ -217,6 +223,151 @@ const formatDisplayValue = (value: unknown, key?: string) => {
   if (typeof value === "boolean") return value ? "بله" : "خیر";
   return String(value);
 };
+
+const unwrapRenovationBillItems = (value: any): any[] => {
+  const root = getApiValue(value) ?? value;
+  const result: any[] = [];
+  const queue: any[] = [root];
+  const visited = new WeakSet<object>();
+  const listKeys = ["items", "data", "result", "results", "list", "rows", "Value", "value"];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) continue;
+
+    if (Array.isArray(current)) {
+      current.forEach((item) => queue.push(item));
+      continue;
+    }
+
+    if (typeof current !== "object") continue;
+    if (visited.has(current)) continue;
+    visited.add(current);
+
+    if (isRenovationBillLike(current)) {
+      result.push(current);
+      continue;
+    }
+
+    listKeys.forEach((key) => {
+      const nextValue = current[key];
+      if (nextValue && (Array.isArray(nextValue) || typeof nextValue === "object")) {
+        queue.push(nextValue);
+      }
+    });
+  }
+
+  return result;
+};
+
+const isRenovationBillLike = (value: Record<string, unknown>) =>
+  [
+    "ParvandeNo",
+    "parvandeNo",
+    "parvande_no",
+    "IdMalek",
+    "idMalek",
+    "BillType",
+    "billType",
+    "bill_type",
+    "Year",
+    "year",
+    "ShenaseGhabz",
+    "shenaseGhabz",
+    "ShenasePardakht",
+    "shenasePardakht",
+    "CodeNosazi",
+    "codeNosazi",
+    "codeN",
+    "Price",
+    "price",
+    "DelayedPrice",
+    "delayedPrice",
+    "PaymentStatus",
+    "paymentStatus",
+  ].some((key) => value[key] !== undefined);
+
+const firstValue = (...values: unknown[]) =>
+  values.find((value) => value !== undefined && value !== null && value !== "");
+
+const toNumberValue = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const normalized = String(value ?? "").replace(/[^\d.-]/g, "");
+  const numberValue = Number(normalized);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+};
+
+const toBooleanValue = (value: unknown) => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  const normalized = String(value ?? "").trim().toLocaleLowerCase("en-US");
+  if (["true", "1", "yes", "paid"].includes(normalized)) return true;
+  if (["false", "0", "no", "unpaid"].includes(normalized)) return false;
+  return Boolean(value);
+};
+
+const toTextValue = (value: unknown, fallback = "") => {
+  const selected = firstValue(value, fallback);
+  return selected === undefined || selected === null ? "" : String(selected);
+};
+
+const normalizeRenovationBill = (item: any): RenovationBill => ({
+  ...item,
+  ParvandeNo: toNumberValue(
+    firstValue(item.ParvandeNo, item.parvandeNo, item.parvande_no, item.FileNo, item.fileNo),
+  ),
+  IdMalek: toNumberValue(
+    firstValue(item.IdMalek, item.idMalek, item.id_malek, item.OwnerId, item.ownerId),
+  ),
+  BillType: toNumberValue(firstValue(item.BillType, item.billType, item.bill_type)),
+  Year: toNumberValue(firstValue(item.Year, item.year, item.Sal, item.sal)),
+  ShenaseGhabz: toTextValue(
+    firstValue(item.ShenaseGhabz, item.shenaseGhabz, item.billId, item.BillId, item.ghabzId),
+  ),
+  ShenasePardakht: toTextValue(
+    firstValue(
+      item.ShenasePardakht,
+      item.shenasePardakht,
+      item.paymentId,
+      item.PaymentId,
+      item.pardakhtId,
+    ),
+  ),
+  CodeNosazi: toTextValue(
+    firstValue(item.CodeNosazi, item.codeNosazi, item.CodeN, item.codeN, item.fullCode),
+  ),
+  NameOwner: toTextValue(
+    firstValue(item.NameOwner, item.nameOwner, item.Nam_malek, item.ownerName, item.MalekName),
+  ),
+  Address:
+    firstValue(item.Address, item.address, item.Nam_address) === undefined
+      ? null
+      : toTextValue(firstValue(item.Address, item.address, item.Nam_address)),
+  Description: toTextValue(firstValue(item.Description, item.description, item.Desc, item.desc)),
+  DateSodor: toTextValue(
+    firstValue(item.DateSodor, item.dateSodor, item.Date, item.date, item.Tarikh, item.tarikh),
+  ),
+  Price: toNumberValue(firstValue(item.Price, item.price, item.Mablagh, item.amount, item.Amount)),
+  DelayedPrice: toNumberValue(
+    firstValue(item.DelayedPrice, item.delayedPrice, item.Moavaghe, item.delayed_price),
+  ),
+  PaymentStatus: toBooleanValue(
+    firstValue(item.PaymentStatus, item.paymentStatus, item.IsPaid, item.isPaid, item.Paid, item.paid),
+  ),
+});
+
+const getExplicitBillCode = (bill: RenovationBill) =>
+  toTextValue(firstValue(bill.CodeNosazi, (bill as any).codeNosazi, (bill as any).CodeN, (bill as any).codeN));
+
+const getBillType = (bill: RenovationBill) =>
+  toNumberValue(firstValue(bill.BillType, (bill as any).billType, (bill as any).bill_type));
+
+const hasValidPaymentIdentifiers = (bill: RenovationBill) =>
+  Boolean(extractPaymentIdentifiers(bill));
+
+const isDisplayableRenovationBill = (bill: RenovationBill) =>
+  (getBillType(bill) === 1 || getBillType(bill) === 2) &&
+  hasValidPaymentIdentifiers(bill);
 
 const getPrimitiveKeys = (source: Record<string, unknown>) =>
   Object.keys(source).filter((key) => {
@@ -449,10 +600,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const getComparableCode = (code: string | null | undefined) =>
     normalizeRenewalCode(code);
 
-  const hasPaymentIdentifiers = (bill: RenovationBill) =>
-    String(bill.ShenaseGhabz ?? "").trim() !== "" &&
-    String(bill.ShenasePardakht ?? "").trim() !== "";
-
   const handleOpenHelp = (title: string, description: string) => {
     setModalContent({ title, description });
     setIsModalOpen(true);
@@ -517,20 +664,33 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
         throw new Error("خطا در دریافت قبوض عوارض نوسازی.");
       }
       const renovationValue = await renovationRes.json();
-      const receivedBills = asArray(
-        getApiValue(renovationValue) ?? renovationValue,
-      ) as RenovationBill[];
+      const receivedBills = unwrapRenovationBillItems(renovationValue).map(
+        normalizeRenovationBill,
+      );
       if (requestId !== renovationRequestIdRef.current) return;
 
-      const bills = receivedBills.filter((bill) => {
+      const explicitlyMatchedBills = receivedBills.filter((bill) => {
         const responseCode = getComparableCode(bill.CodeNosazi);
         return (
           responseCode === comparableRequestedCode &&
           propertyCodeSetRef.current.has(responseCode)
         );
       });
-      const tollBill = bills[0] ?? null;
-      const serviceBill = bills[1] ?? null;
+      const codeLessBills = receivedBills.filter(
+        (bill) => !getComparableCode(getExplicitBillCode(bill)),
+      );
+      const bills =
+        explicitlyMatchedBills.length > 0
+          ? explicitlyMatchedBills
+          : codeLessBills.map((bill) => ({
+              ...bill,
+              CodeNosazi: normalizedCode,
+            }));
+      const displayableBills = bills.filter(isDisplayableRenovationBill);
+      const tollBill =
+        displayableBills.find((bill) => getBillType(bill) === 1) ?? null;
+      const serviceBill =
+        displayableBills.find((bill) => getBillType(bill) === 2) ?? null;
       const tollBills = tollBill ? [tollBill] : [];
 
       setRenovationBills(tollBills);
@@ -539,14 +699,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       const feePairs = tollBill ? billRows(tollBill) : [];
       setFeesRight(feePairs.filter((_: unknown, i: number) => i % 2 === 0));
       setFeesLeft(feePairs.filter((_: unknown, i: number) => i % 2 === 1));
-      setPaymentIdentifiers(
-        tollBill && hasPaymentIdentifiers(tollBill)
-          ? {
-              billId: tollBill.ShenaseGhabz,
-              paymentId: tollBill.ShenasePardakht,
-            }
-          : null,
-      );
+      setPaymentIdentifiers(tollBill ? extractPaymentIdentifiers(tollBill) : null);
 
       setHistoryItems(
         tollBills.map((item, index) => ({
@@ -754,10 +907,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       return;
     }
     const identifiers = bill
-      ? {
-          billId: bill.ShenaseGhabz,
-          paymentId: bill.ShenasePardakht,
-        }
+      ? extractPaymentIdentifiers(bill)
       : paymentIdentifiers;
     if (!identifiers) {
       setPaymentErrorBillIndex(billIndex);
@@ -806,12 +956,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const hasCurrentFees = currentFeeRows.length > 0;
   const hasRenovationServices = renovationServices.length > 0;
   const servicePaymentIdentifiers =
-    renovationServiceBill && hasPaymentIdentifiers(renovationServiceBill)
-      ? {
-          billId: renovationServiceBill.ShenaseGhabz,
-          paymentId: renovationServiceBill.ShenasePardakht,
-        }
-      : null;
+    renovationServiceBill ? extractPaymentIdentifiers(renovationServiceBill) : null;
   const isCurrentPaymentLoading = isPaymentLoading && payingBillIndex === 0;
   const isServicePaymentLoading = isPaymentLoading && payingBillIndex === 1;
   const canStartPayment = Boolean(
