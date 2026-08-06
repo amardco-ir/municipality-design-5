@@ -383,8 +383,7 @@ export function PropertyInquiryPage({
           let selectedProperty: SubProperty | null = null;
 
           if (storedFullCode) {
-            const normalizedStoredCode = normalizeRenewalCode(storedFullCode);
-            mapRef.current?.selectMelkByCodeNosazi(normalizedStoredCode);
+            const normalizedStoredCode = normalizeRenewalCode(storedFullCode);            
             // Find matching property by fullCode
             selectedProperty =
               mapped.find(
@@ -407,6 +406,7 @@ export function PropertyInquiryPage({
 
           // If no stored property found, use the first one
           const propertyToSelect = selectedProperty ?? mapped[0];
+          mapRef.current?.selectMelkByCodeNosazi(propertyToSelect.fullCode);
           setSelectedSubProperty(propertyToSelect);
           setSearchInputs(propertyToSelect.codes);
           void loadRetreatData(propertyToSelect.fullCode);
