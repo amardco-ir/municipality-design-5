@@ -182,6 +182,7 @@ export function PropertyInquiryPage({
   toggleTheme,
 }: PropertyInquiryPageProps) {
   const mapRef = useRef<MapHandle>(null);
+  let mapCodeNosazi =""; 
 
   const {
     data: retreatData,
@@ -277,6 +278,7 @@ export function PropertyInquiryPage({
     property: PropertyItem,
     treeItem: PropertyTreeItem,
   ) => {
+    const selectedFullCode = treeItem.fullCode || property.fullCode;
     const codes: RenewalCodes = {
       region: "",
       neighborhood: "",
@@ -310,6 +312,8 @@ export function PropertyInquiryPage({
       codes: codes,
     };
 
+    mapCodeNosazi = selectedFullCode;
+    mapRef.current?.selectMelkByCodeNosazi(selectedFullCode);
     selectPropertyFromList(subProp);
     void loadRetreatData(subProp.fullCode);
   };
@@ -381,7 +385,7 @@ export function PropertyInquiryPage({
           let selectedProperty: SubProperty | null = null;
 
           if (storedFullCode) {
-            const normalizedStoredCode = normalizeRenewalCode(storedFullCode);
+            const normalizedStoredCode = normalizeRenewalCode(storedFullCode);            
             // Find matching property by fullCode
             selectedProperty =
               mapped.find(
@@ -404,6 +408,7 @@ export function PropertyInquiryPage({
 
           // If no stored property found, use the first one
           const propertyToSelect = selectedProperty ?? mapped[0];
+          mapRef.current?.selectMelkByCodeNosazi(propertyToSelect.fullCode);
           setSelectedSubProperty(propertyToSelect);
           setSearchInputs(propertyToSelect.codes);
           void loadRetreatData(propertyToSelect.fullCode);
@@ -655,61 +660,53 @@ export function PropertyInquiryPage({
               <Map ref={mapRef} autoSelectCode={codeNosazi} />
             </div>
 
-            <div className="absolute left-3 top-2 flex flex-col gap-2">
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-                onClick={() => mapRef.current?.zoomIn()}
-                title="بزرگ‌نمایی"
-              >
-                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-                onClick={() => mapRef.current?.zoomOut()}
-                title="کوچک‌نمایی"
-              >
-                <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-                onClick={() => mapRef.current?.goHome()}
-                title="بازگشت به نمای اصلی"
-              >
-                <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-                onClick={() => mapRef.current?.toggleBasemap()}
-                title="تغییر نقشه زمینه"
-              >
-                <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
-            </div>
-
-            <div className="absolute right-3 top-12 flex flex-col gap-2">
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-                onClick={() =>
-                  mapRef.current?.selectMelkByCodeNosazi(codeNosazi)
-                }
-                title="موقعیت ملک"
-              >
-                <MapPinHouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg transition-colors hover:bg-destructive sm:h-9 sm:w-9"
-                onClick={() => mapRef.current?.clearGraphics()}
-                title="پاک کردن انتخاب"
-              >
-                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
-            </div>
+            {mapRef.current?.mapLockExtent() && (
+              <div className="absolute left-3 top-2 flex flex-col gap-2">
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+                  onClick={() => mapRef.current?.zoomIn()}
+                  title="بزرگ‌نمایی">
+                  <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+                  onClick={() => mapRef.current?.zoomOut()}
+                  title="کوچک‌نمایی">
+                  <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+                  onClick={() => mapRef.current?.goHome()}
+                  title="بازگشت به نمای اصلی">
+                  <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+                  onClick={() => mapRef.current?.toggleBasemap()}
+                  title="تغییر نقشه زمینه">
+                  <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+              </div>
+            )}
+            {mapRef.current?.mapLockExtent() && (
+              <div className="absolute right-3 top-12 flex flex-col gap-2">
+                {/*<div className="absolute right-3 top-12 flex flex-col gap-2 sm:left-4 sm:top-12">*/}
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+                  onClick={() => {
+                    mapRef.current?.selectMelkByCodeNosazi(mapCodeNosazi);
+                  }}
+                  title="موقعیت من">
+                  <MapPinHouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
+                  onClick={() => mapRef.current?.clearGraphics()}
+                  title="پاک کردن انتخاب">
+                  <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+              </div>
+            )}
           </motion.article>
 
           {/* area */}

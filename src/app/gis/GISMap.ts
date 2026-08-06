@@ -16,6 +16,8 @@ import Viewpoint from "@arcgis/core/Viewpoint";
 
 import { ownerService } from "../services/OwnerService";
 
+const lockExtent = true;
+
 export class GISMap {
   private map!: EsriMap;
   private view!: MapView;
@@ -134,6 +136,35 @@ export class GISMap {
     //this.view.ui.add(this.home, "top-left");
     this.view.ui.remove("zoom");
 
+    if (lockExtent) {
+      this.view.navigation.mouseWheelZoomEnabled = false;
+      this.view.navigation.browserTouchPanEnabled = false;
+      this.view.navigation.momentumEnabled = false;
+
+      this.view.constraints = {
+        //geometry: extent,
+        minZoom: this.view.zoom,
+        maxZoom: this.view.zoom,
+        rotationEnabled: false
+      };
+
+      this.view.on("drag", (e) => e.stopPropagation());
+      this.view.on("double-click", (e) => e.stopPropagation());
+      this.view.on("mouse-wheel", (e) => e.stopPropagation());
+      this.view.on("key-down", (e) => {
+        if (
+          e.key === "+" ||
+          e.key === "-" ||
+          e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight"
+        ) {
+          e.stopPropagation();
+        }
+      });
+    }
+
     this.view.popup.dockEnabled = false;
     this.view.popup.dockOptions = {
       buttonEnabled: false,
@@ -184,7 +215,9 @@ export class GISMap {
     });
     //this.view.ui.add(this.basemapToggle, "bottom-right");
 
+    if(!lockExtent){
     this.registerEvents();
+    }    
   }
 
   // async findParcel(code: string) {
@@ -319,6 +352,8 @@ export class GISMap {
   private async getMelk(cNosazi: string): Promise<any> {
     // If the incoming code is not valid, try normalizing by forcing
     // the last three parts to zero (for building/shop/apartment codes)
+    //cNosazi = "1-1-1-1-0-0-0";
+    try {
     const normalized = (() => {
       try {
         const parts = String(cNosazi).trim().split("-");
@@ -344,11 +379,15 @@ export class GISMap {
       this.cNosaziField,
       normalized,
     );
-    if (!result.length)
-      throw new Error(
-        `ملکی با کد نوسازی (\u202A${normalized}\u202C) در نقشه یافت نشد.`,
-      ); //Pr
+      if (!result.length) {
+          throw new Error(`ملکی با کد نوسازی (\u202A${normalized}\u202C) در نقشه یافت نشد.`); //Pr
+      }
+
     return result[0];
+    } catch (err) {
+      console.log(err.message); 
+      return null;
+    }    
   }
 
   private unionExtent(geoList: any[]): any {
@@ -556,6 +595,10 @@ export class GISMap {
       this.map.basemap === this.customSatelliteBasemap
         ? this.defaultBasemap
         : this.customSatelliteBasemap;
+  }
+
+  public mapLockExtent(){
+    return !lockExtent;
   }
 
   destroy() {

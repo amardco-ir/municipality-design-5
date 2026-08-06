@@ -13,7 +13,7 @@ import type { PropertyRecord } from "../../data/properties";
 import type { RegisteredRequestRow } from "../Sabtdarkhastpage";
 import { HelpButton } from "./FormControls";
 
-import { useRef } from "react";
+import {RefObject, useRef } from "react";
 //import Map from "@/app/components/Map";
 import Map from "../../components/Map";
 //import { MapHandle } from "@/app/components/Map/types";
@@ -25,14 +25,16 @@ export function SabtdarkhastFormSecondary({
   loading,
   error,
   onOpenHelp,
+  mapRef,
 }: {
   activeProperty: PropertyRecord | null;
   requests: RegisteredRequestRow[];
   loading: boolean;
   error: string;
   onOpenHelp?: (title: string, description: string) => void;
+   mapRef: RefObject<MapHandle | null>;
 }) {
-  const mapRef = useRef<MapHandle>(null);
+  //const mapRef = useRef<MapHandle>(null);
   const fullCode: string = activeProperty?.fullCode ?? "";
 
   return (
@@ -136,47 +138,51 @@ export function SabtdarkhastFormSecondary({
               </div>
             </div>*/}
         </div>
-         <div className="absolute left-3 top-2 flex flex-col gap-2">
-          <button 
+        {mapRef.current?.mapLockExtent() && (
+          <div className="absolute left-3 top-2 flex flex-col gap-2">
+            <button 
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+              onClick={() => mapRef.current?.zoomIn()}
+              title="بزرگ‌نمایی">
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </button>
+            <button 
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+              onClick={() => mapRef.current?.zoomOut()}
+              title="کوچک‌نمایی">
+                <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </button>
+            <button 
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+              onClick={() => mapRef.current?.goHome()}
+              title="بازگشت به نمای اصلی">
+                <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </button>
+            <button          
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
+              onClick={() => mapRef.current?.toggleBasemap()}
+              title="تغییر نقشه زمینه">
+              <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4"/>
+            </button>
+          </div>
+        )}
+        {mapRef.current?.mapLockExtent() && (
+          <div className="absolute right-3 top-12 flex flex-col gap-2">
+          {/*<div className="absolute right-3 top-12 flex flex-col gap-2 sm:left-4 sm:top-12">*/}
+            <button 
             className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-            onClick={() => mapRef.current?.zoomIn()}
-            title="بزرگ‌نمایی">
-              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </button>
-          <button 
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-            onClick={() => mapRef.current?.zoomOut()}
-            title="کوچک‌نمایی">
-              <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </button>
-          <button 
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-            onClick={() => mapRef.current?.goHome()}
-            title="بازگشت به نمای اصلی">
-              <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </button>
-          <button          
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-            onClick={() => mapRef.current?.toggleBasemap()}
-            title="تغییر نقشه زمینه">
-            <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4"/>
-          </button>
-        </div>
-        <div className="absolute right-3 top-12 flex flex-col gap-2">
-        {/*<div className="absolute right-3 top-12 flex flex-col gap-2 sm:left-4 sm:top-12">*/}
-          <button 
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
-          onClick={() => {mapRef.current?.selectMelkByCodeNosazi(fullCode);}}
-          title="موقعیت من">
-            <MapPinHouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </button>
-          <button 
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
-          onClick={() => mapRef.current?.clearGraphics()}
-          title="پاک کردن انتخاب">
-            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </button>          
-        </div>       
+            onClick={() => {mapRef.current?.selectMelkByCodeNosazi(fullCode);}}
+            title="موقعیت من">
+              <MapPinHouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </button>
+            <button 
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
+            onClick={() => mapRef.current?.clearGraphics()}
+            title="پاک کردن انتخاب">
+              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </button>          
+          </div>
+        )}                
       </motion.article>
     </>
   );

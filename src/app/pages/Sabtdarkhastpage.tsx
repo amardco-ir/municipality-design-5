@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   areRenewalCodesEqual,
@@ -45,6 +45,9 @@ import {
   SelectionModalState,
   StepState,
 } from "./sabtdarkhast/types";
+
+import { MapHandle } from "../components/Map/types";
+
 
 export interface RegisteredRequestRow {
   id: string;
@@ -532,6 +535,7 @@ export function SabtDarkhastPage({
   isDark,
   toggleTheme,
 }: SabtDarkhastPageProps) {
+  const mapRef = useRef<MapHandle>(null);
   const [propertyItems, setPropertyItems] = useState<PropertyRecord[]>([]);
   const selectedProperty = propertyItems[0] ?? emptyProperty;
 
@@ -1834,7 +1838,9 @@ export function SabtDarkhastPage({
     };
 
     // Parse the fullCode to extract codes
-    const selectedFullCode = treeItem.fullCode || property.fullCode;
+    const selectedFullCode = treeItem.fullCode || property.fullCode;    
+        
+    mapRef.current?.selectMelkByCodeNosazi(selectedFullCode);
     const parts = selectedFullCode
       .split("-")
       .map((p) => p.trim())
@@ -2056,6 +2062,7 @@ export function SabtDarkhastPage({
                   loading={registeredRequestsLoading}
                   error={registeredRequestsError}
                   onOpenHelp={handleOpenHelp}
+                  mapRef={mapRef}
                 />
               </motion.div>
             )}
