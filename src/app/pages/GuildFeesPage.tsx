@@ -739,8 +739,7 @@ export function GuildFeesPage({ isDark, toggleTheme }: GuildFeesPageProps) {
           let selectedProperty: GuildPropertyItem | null = null;
           
           if (storedFullCode) {
-            const normalizedStoredCode = normalizeRenewalCode(storedFullCode);
-            mapRef.current?.selectMelkByCodeNosazi(normalizedStoredCode);
+            const normalizedStoredCode = normalizeRenewalCode(storedFullCode);            
             // Find matching property by fullCode
             selectedProperty = mapped.find(item => 
               normalizeCode(item.fullCode) === normalizedStoredCode
@@ -763,6 +762,7 @@ export function GuildFeesPage({ isDark, toggleTheme }: GuildFeesPageProps) {
           
           // If no stored property found, use the first one
           const propertyToSelect = selectedProperty ?? mapped[0];
+          mapRef.current?.selectMelkByCodeNosazi(propertyToSelect.fullCode);
           setSelectedCase(propertyToSelect);
           setSearchInputs(propertyToSelect.codes);
           void loadGuildData(propertyToSelect.fullCode, propertyToSelect);

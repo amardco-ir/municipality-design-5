@@ -486,9 +486,9 @@ export function PropertyRequestDetails({ isDark, toggleTheme }: Props) {
               (property) => property.fullCode.trim() === codeToSelect,
             ) ?? mappedProperties[0];
 
+          mapRef.current?.selectMelkByCodeNosazi(propertyToSelect.fullCode);
           setSelectedCodeNosazi(codeToSelect);
-          setSearchValues(toSearchValuesFromCode(codeToSelect));          
-          mapRef.current?.selectMelkByCodeNosazi(codeToSelect);
+          setSearchValues(toSearchValuesFromCode(codeToSelect));                    
           setUploadContext(
             getUploadContext(propertyToSelect, propertyToSelect.raw),
           );

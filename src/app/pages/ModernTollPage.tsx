@@ -687,8 +687,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
 
           if (storedFullCode) {
             const normalizedStoredCode = normalizeRenewalCode(storedFullCode);
-            // Find matching property by fullCode
-            mapRef.current?.selectMelkByCodeNosazi(normalizedStoredCode);
+            // Find matching property by fullCode            
             selectedProp =
               mapped.find(
                 (item) =>
@@ -698,6 +697,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
 
           // If no stored property found, use the first one
           const propertyToSelect = selectedProp ?? mapped[0];
+          mapRef.current?.selectMelkByCodeNosazi(propertyToSelect.fullCode);
           setSelectedProperty(propertyToSelect);
           setSearchInputs(propertyToSelect.codes);
           void loadRenovationData(
