@@ -182,6 +182,7 @@ export function PropertyInquiryPage({
   toggleTheme,
 }: PropertyInquiryPageProps) {
   const mapRef = useRef<MapHandle>(null);
+  let mapCodeNosazi =""; 
 
   const {
     data: retreatData,
@@ -311,6 +312,7 @@ export function PropertyInquiryPage({
       codes: codes,
     };
 
+    mapCodeNosazi = selectedFullCode;
     mapRef.current?.selectMelkByCodeNosazi(selectedFullCode);
     selectPropertyFromList(subProp);
     void loadRetreatData(subProp.fullCode);
@@ -692,7 +694,7 @@ export function PropertyInquiryPage({
                 <button
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                   onClick={() => {
-                    mapRef.current?.selectMelkByCodeNosazi(fullCode);
+                    mapRef.current?.selectMelkByCodeNosazi(mapCodeNosazi);
                   }}
                   title="موقعیت من">
                   <MapPinHouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
