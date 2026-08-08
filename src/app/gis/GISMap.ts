@@ -16,7 +16,7 @@ import Viewpoint from "@arcgis/core/Viewpoint";
 
 import { ownerService } from "../services/OwnerService";
 
-const lockExtent = true;
+let lockExtent = true;
 
 export class GISMap {
   private map!: EsriMap;
@@ -96,61 +96,118 @@ export class GISMap {
   };
 
   async initialize(container: HTMLDivElement) {
+    //#region GIS CONFIG
+    const map_ENDPOINT = "/api/maps";
+    //const map_ENDPOINT = "http://192.168.10.3:6500/api/maps";
+
+    const response = await fetch(map_ENDPOINT, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`خطا در دریافت تنظیمات GIS: ${response.status}`);
+      throw new Error(`خطا در دریافت تنظیمات GIS: ${response.status}`);
+    }
+
+    const config = await response.json();
+
+    if (!config.isSuccess) {
+      console.error("خطا در دریافت تنظیمات GIS");
+      throw new Error("خطا در دریافت تنظیمات GIS");
+    }
+
+    const mapConfig = config.value;
+
+    // Set Melk Service URL
+    const melkLayerUrl =
+      mapConfig?.address ||
+      "/arcgis/rest/services/Maragheh/Maraghe_14050406/MapServer/1";
+
+    // Set Basemap Service URL
+    const customBasemapURL =
+      mapConfig?.customBasemapURL ||
+      "/arcgis/rest/services/Maragheh/Google2025/ImageServer";
+
+    const geometryServiceAddress = mapConfig?.geometryServiceAddress;
+    const printServiceAddress = mapConfig?.printServiceAddress;
+    const arseLayerId = mapConfig?.arseLayerId;
+
+    lockExtent = mapConfig?.locked ?? true;
+    //#endregion
+
+    //#region LAYERS
     this.melkLayer = new FeatureLayer({
-      url: "/arcgis/rest/services/Maragheh/Maraghe_14050406/MapServer/1",
+      url: melkLayerUrl,
       minScale: 0,
     });
-    // this.parcelService = new ParcelService(this.melkLayer);
 
     this.graphicsLayer = new GraphicsLayer();
+    //#endregion
 
+    //#region BASEMAP
     this.customSatelliteBasemap = new Basemap({
       title: "Satellite",
       id: "customSatellite",
       thumbnailUrl: "../../../dist/images/Satellite.png",
       baseLayers: [
         new ImageryLayer({
-          url: "/arcgis/rest/services/Maragheh/Google2025/ImageServer",
+          url: customBasemapURL,
         }),
       ],
     });
+    //#endregion
 
+    //#region MAP
     this.map = new EsriMap({
       basemap: "osm",
       layers: [this.melkLayer, this.graphicsLayer],
     });
+
     this.defaultBasemap = this.map.basemap;
 
     this.view = new MapView({
       container,
       map: this.map,
     });
+    //#endregion
 
+    //#region VIEW UI
     this.scaleBar = new ScaleBar({
       view: this.view,
       unit: "metric",
     });
-    this.view.ui.add(this.scaleBar, "bottom-left");
 
+    this.view.ui.add(this.scaleBar, "bottom-left");
     this.view.ui.remove("attribution");
-    //this.view.ui.add(this.home, "top-left");
     this.view.ui.remove("zoom");
 
+    this.view.popup.dockEnabled = false;
+    this.view.popup.dockOptions = {
+      buttonEnabled: false,
+      breakpoint: false,
+    };
+
+    this.view.popup.collapseEnabled = false;
+    this.view.popup.visibleElements = {
+      closeButton: true,
+      featureNavigation: false,
+      actionBar: false,
+    };
+    //#endregion
+
+    //#region LOCK EXTENT
     if (lockExtent) {
       this.view.navigation.mouseWheelZoomEnabled = false;
       this.view.navigation.browserTouchPanEnabled = false;
       this.view.navigation.momentumEnabled = false;
 
-      this.view.constraints = {
-        //geometry: extent,
-        minZoom: this.view.zoom,
-        maxZoom: this.view.zoom,
-        rotationEnabled: false
-      };
-
       this.view.on("drag", (e) => e.stopPropagation());
       this.view.on("double-click", (e) => e.stopPropagation());
       this.view.on("mouse-wheel", (e) => e.stopPropagation());
+
       this.view.on("key-down", (e) => {
         if (
           e.key === "+" ||
@@ -164,60 +221,66 @@ export class GISMap {
         }
       });
     }
+    //#endregion
 
-    this.view.popup.dockEnabled = false;
-    this.view.popup.dockOptions = {
-      buttonEnabled: false,
-      breakpoint: false,
-    };
-    this.view.popup.collapseEnabled = false;
-    this.view.popup.visibleElements = {
-      closeButton: true,
-      featureNavigation: false,
-      actionBar: false,
-    };
-
+    //#region WAIT FOR VIEW AND LAYER
     await this.view.when();
     await this.melkLayer.when();
 
     this.layerView = await this.view.whenLayerView(this.melkLayer);
+    //#endregion
 
+    //#region EXTENT
     const extent = this.melkLayer.fullExtent?.clone();
+
     if (extent) {
       extent.expand(1.2);
 
-      this.view.goTo(extent, {
-        animate: false,
-      });
-
+      // تنظیم محدودیت قبل از goTo
       this.view.constraints = {
         geometry: extent,
         minZoom: 14,
         maxZoom: 22,
         rotationEnabled: false,
       };
-    }
 
-    this.homeViewpoint = new Viewpoint({
-      targetGeometry: extent.clone(),
-    });
+      try {
+        await this.view.goTo(extent, {
+          animate: false,
+        });
+      } catch (error: any) {
+        if (error?.name !== "view:goto-interrupted") {
+          console.error("خطا در رفتن به extent:", error);
+        }
+      }
 
-    this.home = new Home({
-      view: this.view,
-      viewpoint: {
+      this.homeViewpoint = new Viewpoint({
         targetGeometry: extent,
-      },
-    });
+      });
 
+      this.home = new Home({
+        view: this.view,
+        viewpoint: {
+          targetGeometry: extent,
+        },
+      });
+    }
+    //#endregion
+
+    //#region BASEMAP TOGGLE
     this.basemapToggle = new BasemapToggle({
       view: this.view,
       nextBasemap: this.customSatelliteBasemap,
     });
-    //this.view.ui.add(this.basemapToggle, "bottom-right");
 
-    if(!lockExtent){
-    this.registerEvents();
-    }    
+    // this.view.ui.add(this.basemapToggle, "bottom-right");
+    //#endregion
+
+    //#region EVENTS
+    if (!lockExtent) {
+      this.registerEvents();
+    }
+    //#endregion
   }
 
   // async findParcel(code: string) {
