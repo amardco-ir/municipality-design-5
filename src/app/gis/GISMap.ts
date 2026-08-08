@@ -123,19 +123,19 @@ export class GISMap {
 
     // Set Melk Service URL
     const melkLayerUrl =
-      mapConfig?.address ||
+      mapConfig?.melkLayerUrl ||
       "/arcgis/rest/services/Maragheh/Maraghe_14050406/MapServer/1";
 
     // Set Basemap Service URL
     const customBasemapURL =
-      mapConfig?.customBasemapURL ||
+      mapConfig?.customBaseMapUrl ||
       "/arcgis/rest/services/Maragheh/Google2025/ImageServer";
 
     const geometryServiceAddress = mapConfig?.geometryServiceAddress;
     const printServiceAddress = mapConfig?.printServiceAddress;
     const arseLayerId = mapConfig?.arseLayerId;
 
-    lockExtent = mapConfig?.locked ?? true;
+    lockExtent = mapConfig?.lockExtent ?? true;
     //#endregion
 
     //#region LAYERS
