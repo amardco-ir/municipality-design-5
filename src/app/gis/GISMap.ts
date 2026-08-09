@@ -417,38 +417,40 @@ export class GISMap {
     // the last three parts to zero (for building/shop/apartment codes)
     //cNosazi = "1-1-1-1-0-0-0";
     try {
-    const normalized = (() => {
-      try {
-        const parts = String(cNosazi).trim().split("-");
-        if (parts.length === 7 && parts.every((p) => /^\d+$/.test(p))) {
-          const p = parts.slice();
-          p[4] = "0";
-          p[5] = "0";
-          p[6] = "0";
-          return p.join("-");
+      const normalized = (() => {
+        try {
+          const parts = String(cNosazi).trim().split("-");
+          if (parts.length === 7 && parts.every((p) => /^\d+$/.test(p))) {
+            const p = parts.slice();
+            p[4] = "0";
+            p[5] = "0";
+            p[6] = "0";
+            return p.join("-");
+          }
+        } catch {
+          /* ignore */
         }
-      } catch {
-        /* ignore */
+        return cNosazi;
+      })();
+
+      if (!this.isValidCNosaziMelk(normalized)) {
+        alert(`کد نوسازی (\u202A${cNosazi}\u202C) معتبر نیست!`); //Pr
+        throw new Error(`کد نوسازی (\u202A${cNosazi}\u202C) معتبر نیست!`); //Pr
       }
-      return cNosazi;
-    })();
 
-    if (!this.isValidCNosaziMelk(normalized)) {
-      throw new Error(`کد نوسازی (\u202A${cNosazi}\u202C) معتبر نیست!`); //Pr
-    }
-
-    const result = await this.selectByAttribute(
-      this.melkLayer,
-      this.cNosaziField,
-      normalized,
-    );
-      if (!result.length) {
+      const result = await this.selectByAttribute(
+        this.melkLayer,
+        this.cNosaziField,
+        normalized,
+      );
+        if (!result.length) {
+          alert(`ملکی با کد نوسازی (\u202A${normalized}\u202C) در نقشه یافت نشد.`); //Pr  
           throw new Error(`ملکی با کد نوسازی (\u202A${normalized}\u202C) در نقشه یافت نشد.`); //Pr
-      }
+        }
 
-    return result[0];
-    } catch (err) {
-      console.log(err.message); 
+      return result[0];
+    } catch (err) {      
+      //console.error(err.message); 
       return null;
     }    
   }
@@ -576,6 +578,7 @@ export class GISMap {
     try {
       // 1. Find Melk in Map & Fit View to Melk Extent
       const featureMelk = await this.getMelk(cNosazi);
+      if(!featureMelk){throw new Error();}
       const geoMelk = featureMelk.geometry;
       const extentMelk = geoMelk.extent.expand(4);
       this.view.goTo(extentMelk);
@@ -585,7 +588,10 @@ export class GISMap {
       this.addManagedGraphic(geoMelk, "select", featureMelk.attributes);
 
       // 3. Export Data
-    } catch {}
+    } catch {
+      this.clearGraphics();
+      this.goHome();
+    }
   }
 
   public async highlightMelkByCodeNosazi(cNosaziList: any[]) {
