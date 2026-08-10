@@ -1,6 +1,9 @@
+/// <reference types="vite/client" />
+
 import {
   AUTH_TOKEN_KEY,
   REFRESH_TOKEN_KEY,
+  expireStoredAuthSession,
   storeAuthTokens,
 } from "../utils/authStorage";
 
@@ -34,45 +37,32 @@ const firstEnvUrl = (...values: Array<string | undefined>) => {
   return "";
 };
 
-const API_BASE_URL = import.meta.env.DEV
-  ? firstEnvUrl(import.meta.env.VITE_DEV_API_BASE_URL, "")
-  : firstEnvUrl(
-      import.meta.env.VITE_API_BASE_URL,
-      import.meta.env.VITE_API_URL,
-      DEFAULT_API_BASE_URL,
-    );
+const API_BASE_URL = firstEnvUrl(
+  import.meta.env.VITE_API_BASE_URL,
+  import.meta.env.VITE_API_URL,
+  DEFAULT_API_BASE_URL,
+);
 
-const DOTNET10_API_BASE_URL = import.meta.env.DEV
-  ? firstEnvUrl(import.meta.env.VITE_DEV_DOTNET10_API_BASE_URL, "/dotnet10-api")
-  : firstEnvUrl(
-      import.meta.env.VITE_DOTNET10_API_BASE_URL,
-      import.meta.env.VITE_DOTNET10_API_URL,
-      DEFAULT_DOTNET10_API_BASE_URL,
-    );
+const DOTNET10_API_BASE_URL = firstEnvUrl(
+  import.meta.env.VITE_DOTNET10_API_BASE_URL,
+  import.meta.env.VITE_DOTNET10_API_URL,
+  DEFAULT_DOTNET10_API_BASE_URL,
+);
 
-const PAYMENT_API_BASE_URL = import.meta.env.DEV
-  ? firstEnvUrl(import.meta.env.VITE_DEV_PAYMENT_API_BASE_URL, "/payment-api")
-  : firstEnvUrl(
-      import.meta.env.VITE_PAYMENT_API_BASE_URL,
-      DEFAULT_PAYMENT_API_BASE_URL,
-    );
+const PAYMENT_API_BASE_URL = firstEnvUrl(
+  import.meta.env.VITE_PAYMENT_API_BASE_URL,
+  DEFAULT_PAYMENT_API_BASE_URL,
+);
 
-const RENOVATION_BILL_API_BASE_URL = import.meta.env.DEV
-  ? firstEnvUrl(
-      import.meta.env.VITE_DEV_RENOVATION_BILL_API_BASE_URL,
-      "/renovation-bill-api",
-    )
-  : firstEnvUrl(
-      import.meta.env.VITE_RENOVATION_BILL_API_BASE_URL,
-      DEFAULT_RENOVATION_BILL_API_BASE_URL,
-    );
+const RENOVATION_BILL_API_BASE_URL = firstEnvUrl(
+  import.meta.env.VITE_RENOVATION_BILL_API_BASE_URL,
+  DEFAULT_RENOVATION_BILL_API_BASE_URL,
+);
 
-const SMS_API_BASE_URL = import.meta.env.DEV
-  ? firstEnvUrl(import.meta.env.VITE_DEV_SMS_API_BASE_URL, "/sms-api")
-  : firstEnvUrl(
-      import.meta.env.VITE_SMS_API_BASE_URL,
-      DEFAULT_SMS_API_BASE_URL,
-    );
+const SMS_API_BASE_URL = firstEnvUrl(
+  import.meta.env.VITE_SMS_API_BASE_URL,
+  DEFAULT_SMS_API_BASE_URL,
+);
 
 const DOTNET48_ACCEPT_HEADER = "text/plain";
 const REFRESH_TOKEN_ENDPOINT =
@@ -123,11 +113,19 @@ async function fetchWithTokenRefresh(url: string, options?: RequestInit) {
   if (response.status !== 401 || !isAuthenticatedRequest) return response;
 
   const token = await refreshAccessToken();
-  if (!token) return response;
+  if (!token) {
+    expireStoredAuthSession();
+    return response;
+  }
 
   const retryHeaders = new Headers(options?.headers);
   retryHeaders.set("Authorization", `Bearer ${token}`);
-  return fetch(url, { ...options, headers: retryHeaders });
+  const retryResponse = await fetch(url, { ...options, headers: retryHeaders });
+  if (retryResponse.status === 401) {
+    expireStoredAuthSession();
+  }
+
+  return retryResponse;
 }
 
 function withDotNet48Headers(options?: RequestInit): RequestInit {

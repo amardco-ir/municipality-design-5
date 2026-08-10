@@ -4,13 +4,15 @@ import {
   Building2,
   ChevronDown,
   ChevronLeft,
+  LayoutDashboard,
   LogOut,
   Menu,
   Moon,
   Sun,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-// import { Dashboard } from "./adminpanel/AdminDashboard";
+import { useAuthModal } from "../components/AuthContext";
+import { Dashboard } from "./adminpanel/AdminDashboard";
 import { AdminFaqPage } from "./adminpanel/AdminFaqPage";
 import { AdminNewsPage } from "./adminpanel/AdminNewsPage";
 import { AdminNewsGroupsPage } from "./adminpanel/AdminNewsGroupsPage";
@@ -18,27 +20,22 @@ import {
   AdminShahkarPage,
   AdminSmsPage,
 } from "./adminpanel/AdminIntegrationSettingsPage";
+import { AdminMapSettingsPage } from "./adminpanel/AdminMapSettingsPage";
 import {
   AdminShahkarLogsPage,
   AdminSmsLogsPage,
 } from "./adminpanel/AdminIntegrationLogsPage";
-import {
-  SettingsPage,
-  SiteContentPage,
-} from "./adminpanel/AdminSettingsPage";
+import { SettingsPage, SiteContentPage } from "./adminpanel/AdminSettingsPage";
 import { AdminSlidersPage } from "./adminpanel/AdminSlidersPage";
 import { UserManagement } from "./adminpanel/UserManagement";
 import { navItems } from "./adminpanel/adminData";
-import {
-  AUTH_STORAGE_KEY,
-  AUTH_TYPE_KEY,
-} from "../utils/authStorage";
+import { AUTH_TYPE_KEY, hasStoredAuthSession } from "../utils/authStorage";
 
 // ==================== MAIN ADMIN PANEL ====================
 export default function AdminPanel({ isDark, toggleTheme }) {
   const navigate = useNavigate();
-  // const [activePage, setActivePage] = useState("dashboard");
-  const [activePage, setActivePage] = useState("news");
+  const { setIsAuthenticated } = useAuthModal();
+  const [activePage, setActivePage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openNavTrees, setOpenNavTrees] = useState({
@@ -48,7 +45,7 @@ export default function AdminPanel({ isDark, toggleTheme }) {
   });
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem(AUTH_STORAGE_KEY) === "true";
+    const isAuthenticated = hasStoredAuthSession();
     const userType = localStorage.getItem(AUTH_TYPE_KEY);
 
     if (!isAuthenticated) {
@@ -61,12 +58,12 @@ export default function AdminPanel({ isDark, toggleTheme }) {
     }
   }, [navigate]);
 
-  const handleLogout = () => {
+  const handleExitPanel = () => {
     navigate("/", { replace: true });
   };
 
   const pageComponents = {
-    // dashboard: <Dashboard />,
+    dashboard: <Dashboard />,
     faq: <AdminFaqPage />,
     news: <AdminNewsPage />,
     "news-groups": <AdminNewsGroupsPage />,
@@ -78,6 +75,7 @@ export default function AdminPanel({ isDark, toggleTheme }) {
     settings: <SettingsPage />,
     "site-content": <SiteContentPage />,
     sliders: <AdminSlidersPage />,
+    "map-settings": <AdminMapSettingsPage />,
   };
 
   const findNavLabel = (items, pageId) => {
@@ -236,11 +234,11 @@ export default function AdminPanel({ isDark, toggleTheme }) {
                       }
                       title={isTreeOpen ? "بستن زیرمنو" : "باز کردن زیرمنو"}
                     >
-                        <ChevronDown
-                          className={`h-4 w-4 transition-transform ${
-                            isTreeOpen ? "rotate-180" : ""
-                          }`}
-                        />
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform ${
+                          isTreeOpen ? "rotate-180" : ""
+                        }`}
+                      />
                     </button>
                   ) : null}
                 </div>
@@ -283,17 +281,17 @@ export default function AdminPanel({ isDark, toggleTheme }) {
           })}
         </nav>
 
-        {/* LOGOUT BUTTON - FIXED AT BOTTOM */}
+        {/* EXIT PANEL BUTTON - FIXED AT BOTTOM */}
         <div
           className="p-3 border-t mt-auto shrink-0"
           style={{ borderColor: "var(--border)" }}
         >
           <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            onClick={handleExitPanel}
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
           >
             <LogOut className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span>خروج از پنل</span>}
+            {sidebarOpen && <span>بازگشت به صفحه اصلی</span>}
           </button>
         </div>
       </motion.aside>

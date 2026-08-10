@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowRight,
@@ -44,6 +44,10 @@ import {
   type PaymentIdentifiers,
 } from "../services/paymentService";
 import {
+  fetchPaymentReports,
+  type PaymentReportRecord,
+} from "../data/paymentReports";
+import {
   PropertyTreeList,
   type PropertyItem as TreePropertyItem,
   type PropertyTreeItem,
@@ -86,6 +90,18 @@ interface HistoryItem {
   date: string;
   amount: string;
   status: string;
+}
+
+interface PaymentReportItem {
+  id: string;
+  billId: string;
+  paymentId: string;
+  amount: string;
+  paymentDate: string;
+  trackingCode: string;
+  status: string;
+  description: string;
+  raw: PaymentReportRecord;
 }
 
 interface RenovationBill {
@@ -229,7 +245,16 @@ const unwrapRenovationBillItems = (value: any): any[] => {
   const result: any[] = [];
   const queue: any[] = [root];
   const visited = new WeakSet<object>();
-  const listKeys = ["items", "data", "result", "results", "list", "rows", "Value", "value"];
+  const listKeys = [
+    "items",
+    "data",
+    "result",
+    "results",
+    "list",
+    "rows",
+    "Value",
+    "value",
+  ];
 
   while (queue.length > 0) {
     const current = queue.shift();
@@ -251,7 +276,10 @@ const unwrapRenovationBillItems = (value: any): any[] => {
 
     listKeys.forEach((key) => {
       const nextValue = current[key];
-      if (nextValue && (Array.isArray(nextValue) || typeof nextValue === "object")) {
+      if (
+        nextValue &&
+        (Array.isArray(nextValue) || typeof nextValue === "object")
+      ) {
         queue.push(nextValue);
       }
     });
@@ -300,7 +328,9 @@ const toNumberValue = (value: unknown) => {
 const toBooleanValue = (value: unknown) => {
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value !== 0;
-  const normalized = String(value ?? "").trim().toLocaleLowerCase("en-US");
+  const normalized = String(value ?? "")
+    .trim()
+    .toLocaleLowerCase("en-US");
   if (["true", "1", "yes", "paid"].includes(normalized)) return true;
   if (["false", "0", "no", "unpaid"].includes(normalized)) return false;
   return Boolean(value);
@@ -311,18 +341,184 @@ const toTextValue = (value: unknown, fallback = "") => {
   return selected === undefined || selected === null ? "" : String(selected);
 };
 
+const normalizeReportKey = (value: string) =>
+  value
+    .trim()
+    .toLocaleLowerCase("en-US")
+    .replace(/[\s_\-.:/\\\u200c\u200f]+/g, "");
+
+const readReportValue = (
+  record: PaymentReportRecord,
+  aliases: string[],
+): unknown => {
+  const normalizedAliases = new Set(aliases.map(normalizeReportKey));
+  const entry = Object.entries(record).find(([key, value]) => {
+    return (
+      normalizedAliases.has(normalizeReportKey(key)) &&
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
+    );
+  });
+
+  return entry?.[1];
+};
+
+const formatReportAmount = (value: unknown) => {
+  if (value === undefined || value === null || String(value).trim() === "") {
+    return emptyDisplay;
+  }
+
+  const numberValue = toNumberValue(value);
+  if (numberValue > 0) {
+    return `${numberValue.toLocaleString("fa-IR")} ریال`;
+  }
+
+  return String(value);
+};
+
+const formatReportStatus = (value: unknown) => {
+  if (value === undefined || value === null || String(value).trim() === "") {
+    return emptyDisplay;
+  }
+
+  if (typeof value === "boolean") return value ? "پرداخت شده" : "پرداخت نشده";
+  if (typeof value === "number")
+    return value !== 0 ? "پرداخت شده" : "پرداخت نشده";
+
+  const text = String(value).trim();
+  const normalized = text.toLocaleLowerCase("en-US");
+  if (
+    ["true", "1", "paid", "success", "successful", "succeeded"].includes(
+      normalized,
+    )
+  ) {
+    return "پرداخت شده";
+  }
+  if (
+    [
+      "false",
+      "0",
+      "unpaid",
+      "failed",
+      "failure",
+      "canceled",
+      "cancelled",
+    ].includes(normalized)
+  ) {
+    return "پرداخت نشده";
+  }
+
+  return text;
+};
+
+const normalizePaymentReport = (
+  record: PaymentReportRecord,
+  index: number,
+): PaymentReportItem => {
+  const billId = readReportValue(record, [
+    "billId",
+    "billNo",
+    "shenaseGhabz",
+    "ghabzId",
+    "ShenaseGhabz",
+  ]);
+  const paymentId = readReportValue(record, [
+    "paymentId",
+    "payId",
+    "shenasePardakht",
+    "pardakhtId",
+    "ShenasePardakht",
+  ]);
+  const amount = readReportValue(record, [
+    "amount",
+    "price",
+    "mablagh",
+    "payablePrice",
+    "totalAmount",
+    "Mablagh",
+    "Price",
+  ]);
+  const paymentDate = readReportValue(record, [
+    "paymentDate",
+    "payDate",
+    "date",
+    "createdAt",
+    "tarikh",
+    "PaymentDate",
+  ]);
+  const trackingCode = readReportValue(record, [
+    "trackingCode",
+    "traceNo",
+    "referenceNo",
+    "refId",
+    "refNo",
+    "transactionId",
+    "TrackingCode",
+  ]);
+  const status = readReportValue(record, [
+    "status",
+    "paymentStatus",
+    "isSuccess",
+    "isPaid",
+    "paid",
+    "Status",
+  ]);
+  const description = readReportValue(record, [
+    "description",
+    "message",
+    "title",
+    "type",
+    "Description",
+  ]);
+
+  return {
+    id: String(
+      readReportValue(record, ["id", "Id", "paymentReportId"]) ?? index + 1,
+    ),
+    billId: toTextValue(billId, emptyDisplay),
+    paymentId: toTextValue(paymentId, emptyDisplay),
+    amount: formatReportAmount(amount),
+    paymentDate: toTextValue(paymentDate, emptyDisplay),
+    trackingCode: toTextValue(trackingCode, emptyDisplay),
+    status: formatReportStatus(status),
+    description: toTextValue(description, emptyDisplay),
+    raw: record,
+  };
+};
+
 const normalizeRenovationBill = (item: any): RenovationBill => ({
   ...item,
   ParvandeNo: toNumberValue(
-    firstValue(item.ParvandeNo, item.parvandeNo, item.parvande_no, item.FileNo, item.fileNo),
+    firstValue(
+      item.ParvandeNo,
+      item.parvandeNo,
+      item.parvande_no,
+      item.FileNo,
+      item.fileNo,
+    ),
   ),
   IdMalek: toNumberValue(
-    firstValue(item.IdMalek, item.idMalek, item.id_malek, item.OwnerId, item.ownerId),
+    firstValue(
+      item.IdMalek,
+      item.idMalek,
+      item.id_malek,
+      item.OwnerId,
+      item.ownerId,
+    ),
   ),
-  BillType: toNumberValue(firstValue(item.BillType, item.billType, item.bill_type)),
+  BillType: toNumberValue(
+    firstValue(item.BillType, item.billType, item.bill_type),
+  ),
   Year: toNumberValue(firstValue(item.Year, item.year, item.Sal, item.sal)),
   ShenaseGhabz: toTextValue(
-    firstValue(item.ShenaseGhabz, item.shenaseGhabz, item.billId, item.BillId, item.ghabzId),
+    firstValue(
+      item.ShenaseGhabz,
+      item.shenaseGhabz,
+      item.billId,
+      item.BillId,
+      item.ghabzId,
+    ),
   ),
   ShenasePardakht: toTextValue(
     firstValue(
@@ -334,33 +530,77 @@ const normalizeRenovationBill = (item: any): RenovationBill => ({
     ),
   ),
   CodeNosazi: toTextValue(
-    firstValue(item.CodeNosazi, item.codeNosazi, item.CodeN, item.codeN, item.fullCode),
+    firstValue(
+      item.CodeNosazi,
+      item.codeNosazi,
+      item.CodeN,
+      item.codeN,
+      item.fullCode,
+    ),
   ),
   NameOwner: toTextValue(
-    firstValue(item.NameOwner, item.nameOwner, item.Nam_malek, item.ownerName, item.MalekName),
+    firstValue(
+      item.NameOwner,
+      item.nameOwner,
+      item.Nam_malek,
+      item.ownerName,
+      item.MalekName,
+    ),
   ),
   Address:
     firstValue(item.Address, item.address, item.Nam_address) === undefined
       ? null
       : toTextValue(firstValue(item.Address, item.address, item.Nam_address)),
-  Description: toTextValue(firstValue(item.Description, item.description, item.Desc, item.desc)),
-  DateSodor: toTextValue(
-    firstValue(item.DateSodor, item.dateSodor, item.Date, item.date, item.Tarikh, item.tarikh),
+  Description: toTextValue(
+    firstValue(item.Description, item.description, item.Desc, item.desc),
   ),
-  Price: toNumberValue(firstValue(item.Price, item.price, item.Mablagh, item.amount, item.Amount)),
+  DateSodor: toTextValue(
+    firstValue(
+      item.DateSodor,
+      item.dateSodor,
+      item.Date,
+      item.date,
+      item.Tarikh,
+      item.tarikh,
+    ),
+  ),
+  Price: toNumberValue(
+    firstValue(item.Price, item.price, item.Mablagh, item.amount, item.Amount),
+  ),
   DelayedPrice: toNumberValue(
-    firstValue(item.DelayedPrice, item.delayedPrice, item.Moavaghe, item.delayed_price),
+    firstValue(
+      item.DelayedPrice,
+      item.delayedPrice,
+      item.Moavaghe,
+      item.delayed_price,
+    ),
   ),
   PaymentStatus: toBooleanValue(
-    firstValue(item.PaymentStatus, item.paymentStatus, item.IsPaid, item.isPaid, item.Paid, item.paid),
+    firstValue(
+      item.PaymentStatus,
+      item.paymentStatus,
+      item.IsPaid,
+      item.isPaid,
+      item.Paid,
+      item.paid,
+    ),
   ),
 });
 
 const getExplicitBillCode = (bill: RenovationBill) =>
-  toTextValue(firstValue(bill.CodeNosazi, (bill as any).codeNosazi, (bill as any).CodeN, (bill as any).codeN));
+  toTextValue(
+    firstValue(
+      bill.CodeNosazi,
+      (bill as any).codeNosazi,
+      (bill as any).CodeN,
+      (bill as any).codeN,
+    ),
+  );
 
 const getBillType = (bill: RenovationBill) =>
-  toNumberValue(firstValue(bill.BillType, (bill as any).billType, (bill as any).bill_type));
+  toNumberValue(
+    firstValue(bill.BillType, (bill as any).billType, (bill as any).bill_type),
+  );
 
 const hasValidPaymentIdentifiers = (bill: RenovationBill) =>
   Boolean(extractPaymentIdentifiers(bill));
@@ -482,6 +722,90 @@ const exportPairsToPdf = (rows: LabelValue[], title: string) => {
   window.setTimeout(() => printWindow.print(), 250);
 };
 
+const exportPaymentReportsToPdf = (reports: PaymentReportItem[]) => {
+  if (reports.length === 0 || typeof window === "undefined") return;
+
+  const tableRows = reports
+    .map(
+      (report, index) => `
+        <tr>
+          <td>${String(index + 1).toLocaleString("fa-IR")}</td>
+          <td>${escapeExportCell(report.billId)}</td>
+          <td>${escapeExportCell(report.paymentId)}</td>
+          <td>${escapeExportCell(report.amount)}</td>
+          <td>${escapeExportCell(report.paymentDate)}</td>
+          <td>${escapeExportCell(report.trackingCode)}</td>
+          <td>${escapeExportCell(report.status)}</td>
+          <td>${escapeExportCell(report.description)}</td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  const html = `
+    <!doctype html>
+    <html dir="rtl" lang="fa">
+      <head>
+        <meta charset="utf-8" />
+        <title>سوابق پرداخت‌ها</title>
+        <style>
+          @page { size: A4 landscape; margin: 12mm; }
+          body {
+            font-family: Tahoma, Arial, sans-serif;
+            color: #111827;
+            direction: rtl;
+          }
+          h1 {
+            margin: 0 0 14px;
+            font-size: 18px;
+            text-align: center;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+          }
+          th, td {
+            border: 1px solid #d1d5db;
+            padding: 7px 8px;
+            text-align: right;
+            vertical-align: top;
+            word-break: break-word;
+          }
+          th {
+            background: #f3f4f6;
+            font-weight: 700;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>سوابق پرداخت‌ها</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>ردیف</th>
+              <th>شناسه قبض</th>
+              <th>شناسه پرداخت</th>
+              <th>مبلغ</th>
+              <th>تاریخ پرداخت</th>
+              <th>کد رهگیری</th>
+              <th>وضعیت</th>
+              <th>توضیحات</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+  const printWindow = window.open("", "_blank", "width=1100,height=800");
+  if (!printWindow) return;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  window.setTimeout(() => printWindow.print(), 250);
+};
+
 const getOwnerId = (owner: any) => {
   if (typeof owner === "number" || typeof owner === "string") {
     return String(owner).trim();
@@ -528,6 +852,9 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const [feesRight, setFeesRight] = useState<LabelValue[]>([]);
   const [feesLeft, setFeesLeft] = useState<LabelValue[]>([]);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [paymentReports, setPaymentReports] = useState<PaymentReportItem[]>([]);
+  const [isPaymentReportsLoading, setIsPaymentReportsLoading] = useState(false);
+  const [paymentReportsError, setPaymentReportsError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({
     title: "",
@@ -699,7 +1026,9 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       const feePairs = tollBill ? billRows(tollBill) : [];
       setFeesRight(feePairs.filter((_: unknown, i: number) => i % 2 === 0));
       setFeesLeft(feePairs.filter((_: unknown, i: number) => i % 2 === 1));
-      setPaymentIdentifiers(tollBill ? extractPaymentIdentifiers(tollBill) : null);
+      setPaymentIdentifiers(
+        tollBill ? extractPaymentIdentifiers(tollBill) : null,
+      );
 
       setHistoryItems(
         tollBills.map((item, index) => ({
@@ -788,11 +1117,52 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
       description: treeItem.text,
       codes: codes,
     };
-    
+
     mapRef.current?.selectMelkByCodeNosazi(selectedFullCode);
     selectPropertyFromList(prop);
     void loadRenovationData(prop.id, prop.fullCode);
   };
+
+  const loadPaymentReports = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!token) {
+        setPaymentReports([]);
+        setPaymentReportsError("");
+        setIsPaymentReportsLoading(false);
+        return;
+      }
+
+      setIsPaymentReportsLoading(true);
+      setPaymentReportsError("");
+      try {
+        const records = await fetchPaymentReports(signal);
+        if (signal?.aborted) return;
+        setPaymentReports(records.map(normalizePaymentReport));
+      } catch (reportError) {
+        if (
+          reportError instanceof DOMException &&
+          reportError.name === "AbortError"
+        ) {
+          return;
+        }
+        setPaymentReports([]);
+        setPaymentReportsError(
+          reportError instanceof Error
+            ? reportError.message
+            : "دریافت سوابق پرداخت ناموفق بود.",
+        );
+      } finally {
+        if (!signal?.aborted) setIsPaymentReportsLoading(false);
+      }
+    },
+    [token],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadPaymentReports(controller.signal);
+    return () => controller.abort();
+  }, [loadPaymentReports]);
 
   useEffect(() => {
     const loadProperties = async () => {
@@ -840,7 +1210,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
 
           if (storedFullCode) {
             const normalizedStoredCode = normalizeRenewalCode(storedFullCode);
-            // Find matching property by fullCode            
+            // Find matching property by fullCode
             selectedProp =
               mapped.find(
                 (item) =>
@@ -959,8 +1329,9 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const currentFeeRows = mergePairs(feesRight, feesLeft);
   const hasCurrentFees = currentFeeRows.length > 0;
   const hasRenovationServices = renovationServices.length > 0;
-  const servicePaymentIdentifiers =
-    renovationServiceBill ? extractPaymentIdentifiers(renovationServiceBill) : null;
+  const servicePaymentIdentifiers = renovationServiceBill
+    ? extractPaymentIdentifiers(renovationServiceBill)
+    : null;
   const isCurrentPaymentLoading = isPaymentLoading && payingBillIndex === 0;
   const isServicePaymentLoading = isPaymentLoading && payingBillIndex === 1;
   const canStartPayment = Boolean(
@@ -1121,7 +1492,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
             </div>
           </motion.article>
 
-          {/* Property Tree List */}
           <motion.article
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1368,6 +1738,119 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                     )}
                   </div>
                 </>
+              )}
+            </div>
+          </motion.article>
+
+          {/* سوابق پرداخت‌ها */}
+          <motion.article
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="soft-card mesh-panel"
+          >
+            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-foreground">
+                  سوابق پرداخت‌ها
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <HelpButton
+                  title="سوابق پرداخت‌ها"
+                  desc="جدولی شامل سوابق پرداخت‌ها از سرویس گزارش پرداخت‌ها. خروجی PDF تمام رکوردها را شامل می‌شود."
+                />
+                <button
+                  type="button"
+                  onClick={() => exportPaymentReportsToPdf(paymentReports)}
+                  disabled={
+                    isPaymentReportsLoading || paymentReports.length === 0
+                  }
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-sky-500/35 bg-sky-500/10 px-3 text-xs font-bold text-sky-700 transition-colors hover:bg-sky-500/15 dark:text-sky-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FileText className="h-4 w-4" />
+                  خروجی پی دی اف
+                </button>
+              </div>
+            </div>
+
+            <div className="responsive-table-shell p-3 sm:p-4">
+              {isPaymentReportsLoading ? (
+                <div className="p-6 text-center text-muted-foreground">
+                  <span className="inline-flex items-center gap-2">
+                    <LoaderCircle className="h-4 w-4 animate-spin" /> در حال
+                    دریافت سوابق پرداخت...
+                  </span>
+                </div>
+              ) : paymentReportsError ? (
+                <div className="p-4 text-center text-destructive text-xs">
+                  {paymentReportsError}
+                </div>
+              ) : paymentReports.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-xs">
+                  هیچ رکوردی برای سوابق پرداخت دریافت نشد.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[48rem] text-right text-[11px] md:text-xs">
+                    <thead>
+                      <tr className="bg-[var(--primary-soft)] text-primary">
+                        <th className="border border-border/50 p-2 text-center">
+                          #
+                        </th>
+                        <th className="border border-border/50 p-2">
+                          شناسه قبض
+                        </th>
+                        <th className="border border-border/50 p-2">
+                          شناسه پرداخت
+                        </th>
+                        <th className="border border-border/50 p-2">مبلغ</th>
+                        <th className="border border-border/50 p-2">
+                          تاریخ پرداخت
+                        </th>
+                        <th className="border border-border/50 p-2">
+                          کد رهگیری
+                        </th>
+                        <th className="border border-border/50 p-2">وضعیت</th>
+                        <th className="border border-border/50 p-2">توضیحات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paymentReports.map((r, i) => (
+                        <tr
+                          key={`${r.id}-${i}`}
+                          className="transition-colors hover:bg-muted/20"
+                        >
+                          <td className="border border-border/50 p-2 text-center font-bold">
+                            {String(i + 1)}
+                          </td>
+                          <td className="border border-border/50 p-2">
+                            {r.billId}
+                          </td>
+                          <td className="border border-border/50 p-2">
+                            {r.paymentId}
+                          </td>
+                          <td className="border border-border/50 p-2">
+                            {r.amount}
+                          </td>
+                          <td className="border border-border/50 p-2">
+                            {r.paymentDate}
+                          </td>
+                          <td className="border border-border/50 p-2">
+                            {r.trackingCode}
+                          </td>
+                          <td className="border border-border/50 p-2">
+                            {r.status}
+                          </td>
+                          <td className="border border-border/50 p-2">
+                            {r.description}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </motion.article>
@@ -1619,25 +2102,29 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                 <button
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                   onClick={() => mapRef.current?.zoomIn()}
-                  title="بزرگ‌نمایی">
+                  title="بزرگ‌نمایی"
+                >
                   <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
                 <button
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                   onClick={() => mapRef.current?.zoomOut()}
-                  title="کوچک‌نمایی">
+                  title="کوچک‌نمایی"
+                >
                   <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
                 <button
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                   onClick={() => mapRef.current?.goHome()}
-                  title="بازگشت به نمای اصلی">
+                  title="بازگشت به نمای اصلی"
+                >
                   <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
                 <button
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-card/90 shadow-lg sm:h-9 sm:w-9"
                   onClick={() => mapRef.current?.toggleBasemap()}
-                  title="تغییر نقشه زمینه">
+                  title="تغییر نقشه زمینه"
+                >
                   <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               </div>
@@ -1650,13 +2137,15 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                   onClick={() => {
                     mapRef.current?.selectMelkByCodeNosazi(fullCode);
                   }}
-                  title="موقعیت من">
+                  title="موقعیت من"
+                >
                   <MapPinHouse className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
                 <button
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/90 shadow-lg sm:h-9 sm:w-9 hover:bg-destructive transition-colors"
                   onClick={() => mapRef.current?.clearGraphics()}
-                  title="پاک کردن انتخاب">
+                  title="پاک کردن انتخاب"
+                >
                   <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               </div>

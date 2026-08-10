@@ -125,7 +125,9 @@ export function ProfileContentSections({
             </div>
           ) : properties.length === 0 ? (
             <div className="rounded-xl border border-border/70 bg-card/80 px-3 py-4 text-sm text-muted-foreground">
-              ملکی برای نمایش وجود ندارد.
+              مراجعه کننده محترم ملکی برای شما یافت نشد . لطفا در صورت مغایرت با
+              در دست داشتن مدارک هویتی و سند مالکیت ملک به واحد نوسازی ممنطقه
+              خود مراجعه فرمایید .
             </div>
           ) : (
             properties.map((property) => (

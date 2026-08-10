@@ -5,7 +5,7 @@ import { Header } from "./components/Header";
 import { HeroSection } from "./components/HeroSection";
 import { ServicesSection } from "./components/ServicesSection";
 import { NewsSection } from "./components/NewsSection";
-// import { StatsSection } from "./components/StatsSection";
+import { StatsSection } from "./components/StatsSection";
 import { QuickAccessSection } from "./components/QuickAccessSection";
 import { RecentActivitiesSection } from "./components/RecentActivitiesSection";
 // import { SupportSection } from "./components/SupportSection";
@@ -23,9 +23,7 @@ function HomePageContent() {
       <HeroSection />
       {isAuthenticated && <ServicesSection />}
       {isAuthenticated && <RecentActivitiesSection />}
-      {/* بخش آمار و ارقام موقتاً غیرفعال شده است.
-      <StatsSection />
-      */}
+      {isAuthenticated && <StatsSection />}
       <NewsSection />
       <FaqSection />
       {/* بخش پشتیبانی و ثبت تیکت موقتاً غیرفعال شده است.
@@ -112,9 +110,7 @@ export default function App() {
           />
           <Route
             path="/guide"
-            element={
-              <GuidePage isDark={isDark} toggleTheme={toggleTheme} />
-            }
+            element={<GuidePage isDark={isDark} toggleTheme={toggleTheme} />}
           />
           <Route
             path="/faq"
@@ -122,15 +118,11 @@ export default function App() {
           />
           <Route
             path="/support"
-            element={
-              <SupportPage isDark={isDark} toggleTheme={toggleTheme} />
-            }
+            element={<SupportPage isDark={isDark} toggleTheme={toggleTheme} />}
           />
           <Route
             path="/contact"
-            element={
-              <ContactPage isDark={isDark} toggleTheme={toggleTheme} />
-            }
+            element={<ContactPage isDark={isDark} toggleTheme={toggleTheme} />}
           />
           <Route
             path="/profile"

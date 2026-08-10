@@ -5,7 +5,8 @@ import {
   ImagePlus,
   KeyRound,
   Layout,
-  // LayoutDashboard,
+  LayoutDashboard,
+  MapPinned,
   Newspaper,
   Send,
   Settings,
@@ -119,7 +120,7 @@ export const settingsTabs = [
 ];
 
 export const navItems = [
-  // { id: "dashboard", label: "داشبورد", icon: LayoutDashboard },
+  { id: "dashboard", label: "داشبورد", icon: LayoutDashboard },
   {
     id: "news-root",
     label: "خبر",
@@ -158,6 +159,11 @@ export const navItems = [
         id: "sliders",
         label: "تنظیمات اسلایدر",
         icon: ImagePlus,
+      },
+      {
+        id: "map-settings",
+        label: "تنظیمات نقشه",
+        icon: MapPinned,
       },
       {
         id: "shahkar",
