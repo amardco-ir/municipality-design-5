@@ -27,7 +27,6 @@ import {
 } from "../data/properties";
 import {
   isApiSuccess,
-  getApiErrorMessage,
   getApiValue,
   type ApiResponse,
 } from "../utils/apiResponseHandler";
@@ -255,7 +254,12 @@ export function MyPropertyPage({ isDark, toggleTheme }: MyPropertyPageProps) {
         const data: ApiResponse = await response.json();
 
         if (!isApiSuccess(data)) {
-          setError(getApiErrorMessage(data));
+          // The files API reports "owner not found" as a failed API response.
+          // On My Properties this is an empty state, so never expose the
+          // backend error description to the citizen.
+          setPropertyItems([]);
+          setSelectedProperty(null);
+          setSelectedPropertyId(null);
           setLoading(false);
           return;
         }
