@@ -600,7 +600,10 @@ export function MyPropertyPage({ isDark, toggleTheme }: MyPropertyPageProps) {
               className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground"
             >
               <MapPin className="h-10 w-10 opacity-30" />
-              <p className="text-sm">هیچ ملکی برای این کد ملی یافت نشد.</p>
+              <p className="max-w-2xl text-center text-sm leading-7">
+                شهروند گرامی ملکی برای شما یافت نشد . خواهشمند است با در دست
+                داشتن اسناد ملک و کارت هویتی به منطقه مربوطه مراجعه فرمایید .
+              </p>
             </motion.div>
           )}
 
