@@ -47,7 +47,7 @@ const Map = forwardRef<MapHandle, MapProps>(({ autoSelectCode }, ref) => {
   }, []);
 
   useEffect(() => {
-    const code = autoSelectCode?.trim();
+    const code = localStorage.getItem("municipality-selected-property-renewal-code");
     const ready = mapReady.current;
     const map = arcgisMap.current;
 

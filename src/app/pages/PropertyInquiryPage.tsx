@@ -407,8 +407,7 @@ export function PropertyInquiryPage({
           }
 
           // If no stored property found, use the first one
-          const propertyToSelect = selectedProperty ?? mapped[0];
-          mapRef.current?.selectMelkByCodeNosazi(propertyToSelect.fullCode);
+          const propertyToSelect = selectedProperty ?? mapped[0];          
           setSelectedSubProperty(propertyToSelect);
           setSearchInputs(propertyToSelect.codes);
           void loadRetreatData(propertyToSelect.fullCode);

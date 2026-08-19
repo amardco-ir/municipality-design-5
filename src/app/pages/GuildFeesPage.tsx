@@ -762,7 +762,6 @@ export function GuildFeesPage({ isDark, toggleTheme }: GuildFeesPageProps) {
           
           // If no stored property found, use the first one
           const propertyToSelect = selectedProperty ?? mapped[0];
-          mapRef.current?.selectMelkByCodeNosazi(propertyToSelect.fullCode);
           setSelectedCase(propertyToSelect);
           setSearchInputs(propertyToSelect.codes);
           void loadGuildData(propertyToSelect.fullCode, propertyToSelect);
