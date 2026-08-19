@@ -1219,8 +1219,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
           }
 
           // If no stored property found, use the first one
-          const propertyToSelect = selectedProp ?? mapped[0];
-          mapRef.current?.selectMelkByCodeNosazi(propertyToSelect.fullCode);
+          const propertyToSelect = selectedProp ?? mapped[0];          
           setSelectedProperty(propertyToSelect);
           setSearchInputs(propertyToSelect.codes);
           void loadRenovationData(
