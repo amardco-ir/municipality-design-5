@@ -115,6 +115,7 @@ const menuItems = [
   { title: "پشتیبانی", href: "#support" },
 ] satisfies HeaderMenuItem[];
 
+const publicHeaderTitle = "شرکت آمارد";
 const defaultHeaderTitle = "شهرداری مراغه";
 const defaultLogoSrc = "/images/Amard Logo 01.JPG";
 
@@ -289,6 +290,9 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
   const unreadCount = notifications.filter(
     (item) => !item.isRead && !readNotificationIds.includes(item.id),
   ).length;
+  const displayedHeaderTitle = isAuthenticated
+    ? siteHeader.title
+    : publicHeaderTitle;
   const headerLogoSrc = resolveInformationImageSrc(
     siteHeader.logo,
     defaultLogoSrc,
@@ -309,6 +313,14 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
   }, [isLoginModalOpen, setIsLoginModalOpen]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setSiteHeader({
+        title: defaultHeaderTitle,
+        logo: null,
+      });
+      return undefined;
+    }
+
     const controller = new AbortController();
 
     fetchHeaderInformation(controller.signal)
@@ -321,7 +333,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
       .catch(() => undefined);
 
     return () => controller.abort();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -777,20 +789,22 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
           <div className="flex h-16 items-center justify-between gap-2 px-3 md:h-20 md:px-4">
             {/* Logo */}
             <div className="flex min-w-0 items-center gap-3">
-              <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden text-primary md:h-12 md:w-12">
-                {siteHeader.logo ? (
-                  <img
-                    src={headerLogoSrc}
-                    alt={siteHeader.title}
-                    className="h-full w-full object-contain p-1"
-                  />
-                ) : (
-                  <Building2 className="h-5 w-5 md:h-6 md:w-6" />
-                )}
-              </div>
+              {isAuthenticated && (
+                <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden text-primary md:h-12 md:w-12">
+                  {siteHeader.logo ? (
+                    <img
+                      src={headerLogoSrc}
+                      alt={displayedHeaderTitle}
+                      className="h-full w-full object-contain p-1"
+                    />
+                  ) : (
+                    <Building2 className="h-5 w-5 md:h-6 md:w-6" />
+                  )}
+                </div>
+              )}
               <div className="min-w-0">
                 <h1 className="truncate text-base font-bold text-foreground md:text-lg">
-                  {siteHeader.title}
+                  {displayedHeaderTitle}
                 </h1>
                 <div className="hidden items-center gap-2 sm:flex">
                   <p className="text-xs text-muted-foreground">

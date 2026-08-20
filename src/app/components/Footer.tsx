@@ -32,7 +32,7 @@ const fallbackEnamadLogoSrc =
 
 const fallbackFooterInformation: SiteInformation = {
   ...emptySiteInformation,
-  title: "شرکت تحلیلگران آمارد",
+  title: "شرکت آمارد",
   tel: "011-43270941-3",
   email: "info@amardco.com",
   address: "مازندران، آمل، بلوار آزادگان، نبش آزادگان 12، ساختمان آمارد",
@@ -50,6 +50,11 @@ export function Footer() {
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setInformation(fallbackFooterInformation);
+      return undefined;
+    }
+
     const controller = new AbortController();
 
     fetchFooterInformation(controller.signal)
@@ -64,7 +69,7 @@ export function Footer() {
       .catch(() => undefined);
 
     return () => controller.abort();
-  }, []);
+  }, [isAuthenticated]);
 
   const footerLinks = {
     support: [
@@ -73,20 +78,25 @@ export function Footer() {
       { label: "پشتیبانی", href: "/support" },
       { label: "تماس با ما", href: "/contact" },
     ],
-    legal: ["قوانین و مقررات", "حریم خصوصی", "شرایط استفاده", "درباره ما"],
   };
 
-  const logoSrc = resolveInformationImageSrc(information.logo, fallbackLogoSrc);
-  const enamadValue = information.enamad?.trim() ?? fallbackEnamadLogoSrc;
+  const visibleInformation = isAuthenticated
+    ? information
+    : fallbackFooterInformation;
+  const logoSrc = resolveInformationImageSrc(
+    visibleInformation.logo,
+    fallbackLogoSrc,
+  );
+  const enamadValue = visibleInformation.enamad?.trim() ?? fallbackEnamadLogoSrc;
 
   useEffect(() => {
     console.log("Enamad data:", {
-      raw: information.enamad,
+      raw: visibleInformation.enamad,
       trimmed: enamadValue,
       length: enamadValue.length,
       isHTML: /<\s*(a|img|script|iframe|div|span)\b/i.test(enamadValue),
     });
-  }, [information.enamad, enamadValue]);
+  }, [visibleInformation.enamad, enamadValue]);
 
   const isEnamadMarkup = /<\s*(a|img|script|iframe|div|span)\b/i.test(
     enamadValue,
@@ -108,16 +118,16 @@ export function Footer() {
               <div className="flex h-16 w-20 shrink-0 items-center justify-center overflow-hidden p-2">
                 <img
                   src={logoSrc}
-                  alt={information.title}
+                  alt={visibleInformation.title}
                   className="h-full w-full object-contain"
                 />
               </div>
               <h3 className="text-base font-bold leading-7">
-                {information.title}
+                {visibleInformation.title}
               </h3>
             </div>
             <p className="mb-6 text-sm leading-7 text-white/90">
-              {information.description}
+              {visibleInformation.description}
             </p>
             <div className="flex items-center gap-3">
               <a
@@ -188,32 +198,34 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <Phone className="mt-0.5 h-5 w-5 shrink-0" />
                 <p className="text-sm text-white/90" dir="ltr">
-                  {information.tel}
+                  {visibleInformation.tel}
                 </p>
               </li>
               <li className="flex items-start gap-3">
                 <Mail className="mt-0.5 h-5 w-5 shrink-0" />
-                <p className="text-sm text-white/90">{information.email}</p>
+                <p className="text-sm text-white/90">
+                  {visibleInformation.email}
+                </p>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-5 w-5 shrink-0" />
                 <div>
                   <p className="text-sm leading-7 text-white/90">
-                    {information.address}
+                    {visibleInformation.address}
                   </p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
                 <Mailbox className="mt-0.5 h-5 w-5 shrink-0" />
                 <p className="text-sm text-white/90" dir="ltr">
-                  {information.postalCode}
+                  {visibleInformation.postalCode}
                 </p>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-white/16 pt-8">
+        <div className="pt-8">
           <div className="flex flex-col-reverse items-center justify-between gap-6 md:flex-row">
             <div className="flex w-full flex-col items-center gap-4 md:w-auto md:items-start">
               <div className="flex min-h-[88px] w-full max-w-[180px] items-center justify-center rounded-xl border border-white/24 bg-white p-3 shadow-xl shadow-black/15">
@@ -238,22 +250,11 @@ export function Footer() {
 
             <div className="flex flex-1 flex-col items-center gap-4 md:items-end">
               <p className="text-center text-sm text-white/80 md:text-right">
-                © 1405 {information.title}. تمامی حقوق محفوظ است.
+                © 1405 {visibleInformation.title}. تمامی حقوق محفوظ است.
               </p>
               <p className="text-center text-sm text-white/80 md:text-right">
                 طراحی شده توسط شرکت تحلیلگران آمارد
               </p>
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/80 md:justify-end">
-                {footerLinks.legal.map((item) => (
-                  <a
-                    key={item}
-                    href="#"
-                    className="transition-colors hover:text-white"
-                  >
-                    {item}
-                  </a>
-                ))}
-              </div>
             </div>
           </div>
         </div>
