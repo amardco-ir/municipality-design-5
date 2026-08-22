@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import {
   ImagePlus,
+  Info,
   Loader2,
   Pencil,
   Power,
@@ -259,6 +260,14 @@ export function AdminSlidersPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="p-5">
+          <div className="mb-5 flex gap-3 rounded-xl border border-primary/20 bg-primary/10 p-3 text-sm leading-6 text-muted-foreground">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p>
+              ابعاد پیشنهادی تصویر اسلایدر 1920x1080 پیکسل با نسبت 16:9 است.
+              برای نمایش دقیق‌تر، سوژه و متن اصلی را وسط تصویر نگه دارید.
+            </p>
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
             <div className="space-y-4">
               <label className="flex flex-col gap-1.5">

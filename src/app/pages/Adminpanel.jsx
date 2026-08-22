@@ -180,7 +180,6 @@ export default function AdminPanel({ isDark, toggleTheme }) {
           {sidebarOpen && (
             <div className="overflow-hidden">
               <p className="font-bold text-sm">پنل مدیریت</p>
-              <p className="text-[10px] text-muted-foreground">شهرداری مراغه</p>
             </div>
           )}
         </div>

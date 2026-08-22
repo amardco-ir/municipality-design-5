@@ -27,8 +27,6 @@ import {
 } from "../data/siteInformation";
 
 const fallbackLogoSrc = "/images/Amard Logo 01.JPG";
-const fallbackEnamadLogoSrc =
-  "https://trustseal.enamad.ir/logo.aspx?id=585219&Code=VUanmSEzsP0cIy8f9V0c55elh5bdyxC7";
 
 const fallbackFooterInformation: SiteInformation = {
   ...emptySiteInformation,
@@ -50,11 +48,6 @@ export function Footer() {
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setInformation(fallbackFooterInformation);
-      return undefined;
-    }
-
     const controller = new AbortController();
 
     fetchFooterInformation(controller.signal)
@@ -69,7 +62,7 @@ export function Footer() {
       .catch(() => undefined);
 
     return () => controller.abort();
-  }, [isAuthenticated]);
+  }, []);
 
   const footerLinks = {
     support: [
@@ -80,29 +73,19 @@ export function Footer() {
     ],
   };
 
-  const visibleInformation = isAuthenticated
-    ? information
-    : fallbackFooterInformation;
+  const visibleInformation = information;
   const logoSrc = resolveInformationImageSrc(
     visibleInformation.logo,
     fallbackLogoSrc,
   );
-  const enamadValue = visibleInformation.enamad?.trim() ?? fallbackEnamadLogoSrc;
-
-  useEffect(() => {
-    console.log("Enamad data:", {
-      raw: visibleInformation.enamad,
-      trimmed: enamadValue,
-      length: enamadValue.length,
-      isHTML: /<\s*(a|img|script|iframe|div|span)\b/i.test(enamadValue),
-    });
-  }, [visibleInformation.enamad, enamadValue]);
+  const enamadValue = visibleInformation.enamad?.trim() ?? "";
+  const hasEnamad = enamadValue.length > 0;
 
   const isEnamadMarkup = /<\s*(a|img|script|iframe|div|span)\b/i.test(
     enamadValue,
   );
   const enamadSrc = !isEnamadMarkup
-    ? resolveInformationImageSrc(enamadValue, fallbackEnamadLogoSrc)
+    ? resolveInformationImageSrc(enamadValue, "")
     : "";
 
   return (
@@ -227,26 +210,28 @@ export function Footer() {
 
         <div className="pt-8">
           <div className="flex flex-col-reverse items-center justify-between gap-6 md:flex-row">
-            <div className="flex w-full flex-col items-center gap-4 md:w-auto md:items-start">
-              <div className="flex min-h-[88px] w-full max-w-[180px] items-center justify-center rounded-xl border border-white/24 bg-white p-3 shadow-xl shadow-black/15">
-                {isEnamadMarkup ? (
-                  <div
-                    className="flex w-full items-center justify-center overflow-hidden"
-                    dangerouslySetInnerHTML={{ __html: enamadValue }}
-                  />
-                ) : (
-                  <img
-                    src={enamadSrc}
-                    alt="نماد اعتماد الکترونیکی"
-                    className="h-full w-full object-contain"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display =
-                        "none";
-                    }}
-                  />
-                )}
+            {hasEnamad && (
+              <div className="flex w-full flex-col items-center gap-4 md:w-auto md:items-start">
+                <div className="flex min-h-[88px] w-full max-w-[180px] items-center justify-center rounded-xl border border-white/24 bg-white p-3 shadow-xl shadow-black/15">
+                  {isEnamadMarkup ? (
+                    <div
+                      className="flex w-full items-center justify-center overflow-hidden"
+                      dangerouslySetInnerHTML={{ __html: enamadValue }}
+                    />
+                  ) : (
+                    <img
+                      src={enamadSrc}
+                      alt="نماد اعتماد الکترونیکی"
+                      className="h-full w-full object-contain"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display =
+                          "none";
+                      }}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex flex-1 flex-col items-center gap-4 md:items-end">
               <p className="text-center text-sm text-white/80 md:text-right">

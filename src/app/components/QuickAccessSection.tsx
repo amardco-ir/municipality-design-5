@@ -1,31 +1,64 @@
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Phone, Mail, MapPin, ExternalLink } from "lucide-react";
+import {
+  emptySiteInformation,
+  fetchFooterInformation,
+  type SiteInformation,
+} from "../data/siteInformation";
 
-const quickLinks = [
+const fallbackQuickAccessInformation: SiteInformation = {
+  ...emptySiteInformation,
+  tel: "04137217266",
+  email: "faroghghoddossi@gmail.com",
+  address: "شهرداری مراغه میدان شهرداری",
+};
+
+const buildQuickLinks = (information: SiteInformation) => [
   {
     icon: Phone,
     title: "پشتیبانی تلفنی",
-    description: "04137217266",
+    description: information.tel || fallbackQuickAccessInformation.tel,
     color: "from-primary to-secondary",
     action: "تماس",
   },
   {
     icon: Mail,
     title: "ایمیل پشتیبانی",
-    description: "faroghghoddossi@gmail.com",
+    description: information.email || fallbackQuickAccessInformation.email,
     color: "from-primary/90 to-secondary/90",
     action: "ارسال ایمیل",
   },
   {
     icon: MapPin,
     title: "آدرس شهرداری",
-    description: "شهرداری مراغه میدان شهرداری",
+    description: information.address || fallbackQuickAccessInformation.address,
     color: "from-secondary/90 to-primary/90",
     action: "مسیریابی",
   },
 ];
 
 export function QuickAccessSection() {
+  const [information, setInformation] = useState<SiteInformation>(
+    fallbackQuickAccessInformation,
+  );
+  const quickLinks = buildQuickLinks(information);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchFooterInformation(controller.signal)
+      .then((data) => {
+        setInformation({
+          ...fallbackQuickAccessInformation,
+          ...data,
+        });
+      })
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, []);
+
   return (
     <section className="py-12 md:py-20">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10">

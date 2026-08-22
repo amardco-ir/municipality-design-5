@@ -1733,6 +1733,7 @@ export function SabtDarkhastPage({
         );
       }
 
+      await fetchNewRequestNumber();
       setStep("registered");
     } catch (error) {
       setRequestSubmitError(
