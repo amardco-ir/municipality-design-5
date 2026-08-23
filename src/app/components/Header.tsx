@@ -12,7 +12,6 @@ import {
 } from "react";
 import {
   Bell,
-  Building2,
   Menu,
   Moon,
   ShieldCheck,
@@ -114,9 +113,6 @@ const menuItems = [
   { title: "سوالات متداول", href: "#faq" },
   { title: "پشتیبانی", href: "#support" },
 ] satisfies HeaderMenuItem[];
-
-const defaultHeaderTitle = "شهرداری مراغه";
-const defaultLogoSrc = "/images/Amard Logo 01.JPG";
 
 const decodeToken = (token: string) => {
   try {
@@ -233,7 +229,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
     title: string;
     logo: string | null;
   }>({
-    title: defaultHeaderTitle,
+    title: "",
     logo: null,
   });
 
@@ -289,10 +285,10 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
   const unreadCount = notifications.filter(
     (item) => !item.isRead && !readNotificationIds.includes(item.id),
   ).length;
-  const displayedHeaderTitle = siteHeader.title || defaultHeaderTitle;
+  const displayedHeaderTitle = siteHeader.title;
   const headerLogoSrc = resolveInformationImageSrc(
     siteHeader.logo,
-    defaultLogoSrc,
+    "",
   );
 
   // ─── Auth Context sync ────────────────────────────────────────────────────
@@ -315,7 +311,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
     fetchHeaderInformation(controller.signal)
       .then((data) => {
         setSiteHeader({
-          title: data.title || defaultHeaderTitle,
+          title: data.title || "",
           logo: data.logo ?? null,
         });
       })
@@ -778,31 +774,31 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
           <div className="flex h-16 items-center justify-between gap-2 px-3 md:h-20 md:px-4">
             {/* Logo */}
             <div className="flex min-w-0 items-center gap-3">
-              <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden text-primary md:h-12 md:w-12">
-                {siteHeader.logo ? (
+              {siteHeader.logo ? (
+                <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden text-primary md:h-12 md:w-12">
                   <img
                     src={headerLogoSrc}
                     alt={displayedHeaderTitle}
                     className="h-full w-full object-contain p-1"
                   />
-                ) : (
-                  <Building2 className="h-5 w-5 md:h-6 md:w-6" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <h1 className="truncate text-base font-bold text-foreground md:text-lg">
-                  {displayedHeaderTitle}
-                </h1>
-                <div className="hidden items-center gap-2 sm:flex">
-                  <p className="text-xs text-muted-foreground">
-                    پرتال جامع خدمات شهری 
-                  </p>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-[var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold text-primary">
-                    <Sparkles className="h-3 w-3" />
-                    نسخه جدید
-                  </span>
                 </div>
-              </div>
+              ) : null}
+              {displayedHeaderTitle ? (
+                <div className="min-w-0">
+                  <h1 className="truncate text-base font-bold text-foreground md:text-lg">
+                    {displayedHeaderTitle}
+                  </h1>
+                  <div className="hidden items-center gap-2 sm:flex">
+                    <p className="text-xs text-muted-foreground">
+                      پرتال جامع خدمات شهری
+                    </p>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-[var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold text-primary">
+                      <Sparkles className="h-3 w-3" />
+                      نسخه جدید
+                    </span>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {/* Desktop nav */}

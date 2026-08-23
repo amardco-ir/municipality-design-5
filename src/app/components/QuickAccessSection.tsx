@@ -7,32 +7,25 @@ import {
   type SiteInformation,
 } from "../data/siteInformation";
 
-const fallbackQuickAccessInformation: SiteInformation = {
-  ...emptySiteInformation,
-  tel: "04137217266",
-  email: "faroghghoddossi@gmail.com",
-  address: "شهرداری مراغه میدان شهرداری",
-};
-
 const buildQuickLinks = (information: SiteInformation) => [
   {
     icon: Phone,
     title: "پشتیبانی تلفنی",
-    description: information.tel || fallbackQuickAccessInformation.tel,
+    description: information.tel,
     color: "from-primary to-secondary",
     action: "تماس",
   },
   {
     icon: Mail,
     title: "ایمیل پشتیبانی",
-    description: information.email || fallbackQuickAccessInformation.email,
+    description: information.email,
     color: "from-primary/90 to-secondary/90",
     action: "ارسال ایمیل",
   },
   {
     icon: MapPin,
     title: "آدرس شهرداری",
-    description: information.address || fallbackQuickAccessInformation.address,
+    description: information.address,
     color: "from-secondary/90 to-primary/90",
     action: "مسیریابی",
   },
@@ -40,7 +33,7 @@ const buildQuickLinks = (information: SiteInformation) => [
 
 export function QuickAccessSection() {
   const [information, setInformation] = useState<SiteInformation>(
-    fallbackQuickAccessInformation,
+    emptySiteInformation,
   );
   const quickLinks = buildQuickLinks(information);
 
@@ -48,12 +41,7 @@ export function QuickAccessSection() {
     const controller = new AbortController();
 
     fetchFooterInformation(controller.signal)
-      .then((data) => {
-        setInformation({
-          ...fallbackQuickAccessInformation,
-          ...data,
-        });
-      })
+      .then(setInformation)
       .catch(() => undefined);
 
     return () => controller.abort();

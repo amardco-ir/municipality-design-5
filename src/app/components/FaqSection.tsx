@@ -15,11 +15,13 @@ import {
   AccordionTrigger,
 } from "./ui/accordion";
 import { fetchFaq, type FaqItem } from "../data/faq";
+import { fetchFooterInformation } from "../data/siteInformation";
 
 export function FaqSection() {
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [footerTel, setFooterTel] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -43,6 +45,16 @@ export function FaqSection() {
     };
 
     void loadFaq();
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchFooterInformation(controller.signal)
+      .then((data) => setFooterTel(data.tel || ""))
+      .catch(() => undefined);
 
     return () => controller.abort();
   }, []);
@@ -91,7 +103,7 @@ export function FaqSection() {
                 <span>کارشناس شهروند یار </span>
               </div>
               <p className="text-xs text-muted-foreground md:text-sm">
-                پاسخ‌گویی تلفنی: 04137217266 
+                پاسخ‌گویی تلفنی: {footerTel}
               </p>
             </div>
             <Link
