@@ -19,14 +19,12 @@ import {
   updateSlider,
   type SliderItem,
 } from "../../data/sliders";
+import { PersianDatePicker } from "./AdminNewsPage";
 
 const emptyForm = {
   picture: null as File | null,
   publishDateTime: "",
 };
-
-const inputClass =
-  "h-11 rounded-xl border border-border bg-background px-3.5 text-sm outline-none transition-colors focus:border-primary";
 
 function isValidPersianDateTime(value: string) {
   const match = /^(\d{4})[/-](\d{2})[/-](\d{2})[ T](\d{2}):(\d{2})(?::\d{2})?$/.exec(
@@ -274,18 +272,30 @@ export function AdminSlidersPage() {
                 <span className="text-[11px] font-bold text-muted-foreground">
                   تاریخ انتشار
                 </span>
-                <input
-                  dir="ltr"
+                <PersianDatePicker
                   value={form.publishDateTime}
-                  onChange={(event) =>
+                  onChange={(value) =>
                     setForm((current) => ({
                       ...current,
-                      publishDateTime: event.target.value,
+                      publishDateTime: value,
                     }))
                   }
-                  placeholder="1405/05/14 14:00"
-                  className={inputClass}
                 />
+                {form.publishDateTime && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        publishDateTime: "",
+                      }))
+                    }
+                    className="flex w-fit items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                    پاک‌کردن تاریخ
+                  </button>
+                )}
               </label>
 
               <label className="flex flex-col gap-1.5">

@@ -204,7 +204,7 @@ interface PersianDatePickerProps {
   onChange: (iso: string) => void;
 }
 
-function PersianDatePicker({ value, onChange }: PersianDatePickerProps) {
+export function PersianDatePicker({ value, onChange }: PersianDatePickerProps) {
   const now = new Date();
   // ty/tm/td are 1-based Jalali values for today
   const [ty, tm, td] = toJalali(

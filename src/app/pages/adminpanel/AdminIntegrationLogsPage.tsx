@@ -33,17 +33,79 @@ function cleanValue(value: string | number | null | undefined) {
   return String(value);
 }
 
-function formatDate(value: string | null | undefined) {
+const persianNumberFormatter = new Intl.NumberFormat("fa-IR", {
+  useGrouping: false,
+});
+
+const persianDateTimeFormatter = new Intl.DateTimeFormat(
+  "fa-IR-u-ca-persian",
+  {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  },
+);
+
+const normalizeDigits = (value: string) =>
+  value.replace(/[\u06F0-\u06F9\u0660-\u0669]/g, (digit) => {
+    const code = digit.charCodeAt(0);
+    return String(code >= 0x06f0 ? code - 0x06f0 : code - 0x0660);
+  });
+
+const toPersianDigits = (value: string) =>
+  value.replace(/\d/g, (digit) => persianNumberFormatter.format(Number(digit)));
+
+function formatJalaliDateTime(
+  year: string,
+  month: string,
+  day: string,
+  hour?: string,
+  minute?: string,
+) {
+  const pad = (part: string) => part.padStart(2, "0");
+  const dateText = `${year}/${pad(month)}/${pad(day)}`;
+  const timeText =
+    hour === undefined ? "" : ` ${pad(hour)}:${pad(minute ?? "0")}`;
+
+  return toPersianDigits(`${dateText}${timeText}`);
+}
+
+function formatDate(value: string | number | null | undefined) {
   const text = cleanValue(value);
   if (text === "-") return text;
 
-  const date = new Date(text);
+  const normalized = normalizeDigits(text).trim();
+  const compactJalaliMatch = normalized.match(/^(1[34]\d{2})(\d{2})(\d{2})$/);
+  if (compactJalaliMatch) {
+    const [, year, month, day] = compactJalaliMatch;
+    return formatJalaliDateTime(year, month, day);
+  }
+
+  const separatedDateMatch = normalized.match(
+    /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[T\s]+(\d{1,2}):(\d{1,2}))?/,
+  );
+  if (separatedDateMatch) {
+    const [, year, month, day, hour, minute] = separatedDateMatch;
+    if (Number(year) < 1700) {
+      return formatJalaliDateTime(year, month, day, hour, minute);
+    }
+  }
+
+  const compactGregorianMatch = normalized.match(
+    /^((?:19|20)\d{2})(\d{2})(\d{2})$/,
+  );
+  const date = compactGregorianMatch
+    ? new Date(
+        Number(compactGregorianMatch[1]),
+        Number(compactGregorianMatch[2]) - 1,
+        Number(compactGregorianMatch[3]),
+      )
+    : new Date(normalized);
   if (Number.isNaN(date.getTime())) return text;
 
-  return new Intl.DateTimeFormat("fa-IR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
+  return persianDateTimeFormatter.format(date);
 }
 
 function StatusBadge({ value }: { value: string | null | undefined }) {
@@ -349,7 +411,6 @@ export function AdminSmsLogsPage() {
         {
           key: "sendDate",
           label: "تاریخ ارسال",
-          dir: "ltr",
           className: "font-mono text-xs",
           render: (item) => formatDate(item.sendDate),
         },
