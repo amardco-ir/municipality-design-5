@@ -19,6 +19,7 @@ import {
   Sun,
   UserCircle2,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Link, useNavigate } from "react-router";
@@ -95,6 +96,7 @@ export interface HeaderMenuItem {
   children?: Array<{
     title: string;
     href: string;
+    icon?: LucideIcon;
   }>;
 }
 
@@ -106,12 +108,12 @@ const menuItems = [
     children: serviceItems.map((item) => ({
       title: item.title,
       href: item.href,
+      icon: item.icon,
     })),
   },
   { title: "فعالیت‌ها", href: "#activities" },
   { title: "اخبار", href: "#news" },
   { title: "سوالات متداول", href: "#faq" },
-  { title: "پشتیبانی", href: "#support" },
 ] satisfies HeaderMenuItem[];
 
 const decodeToken = (token: string) => {
@@ -697,6 +699,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
       const currentHash = window.location.hash;
       if (menuItems.some((item) => item.href === currentHash)) {
         setActiveMenuItem(currentHash);
+        setIsMenuOpen(false);
       }
     };
     syncActiveMenuItem();
@@ -769,13 +772,13 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
     >
       <div className="container mx-auto px-0 md:px-2 lg:px-6">
         <div
-          className={`nav-shell nav-shell-overflow-visible ${scrolled ? "nav-shell-scrolled" : ""}`}
+          className={`nav-shell nav-shell-overflow-visible mobile-header-shell ${scrolled ? "nav-shell-scrolled" : ""}`}
         >
           <div className="flex h-16 items-center justify-between gap-2 px-3 md:h-20 md:px-4">
             {/* Logo */}
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2.5 md:gap-3">
               {siteHeader.logo ? (
-                <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden text-primary md:h-12 md:w-12">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden text-primary md:h-12 md:w-12">
                   <img
                     src={headerLogoSrc}
                     alt={displayedHeaderTitle}
@@ -785,7 +788,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
               ) : null}
               {displayedHeaderTitle ? (
                 <div className="min-w-0">
-                  <h1 className="truncate text-base font-bold text-foreground md:text-lg">
+                  <h1 className="max-w-[9rem] truncate text-sm font-bold text-white sm:max-w-[13rem] md:max-w-none md:text-lg md:text-foreground">
                     {displayedHeaderTitle}
                   </h1>
                   <div className="hidden items-center gap-2 sm:flex">
@@ -834,7 +837,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
             </nav>
 
             {/* Actions */}
-            <div className="relative flex items-center gap-2 md:gap-3">
+            <div className="relative flex shrink-0 items-center gap-1.5 md:gap-3">
               {isAuthenticated && (
                 <>
                   <motion.button
@@ -857,7 +860,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
                   </motion.button>
 
                   {loginType === "admin" && (
-                    <motion.div whileTap={{ scale: 0.95 }}>
+                    <motion.div whileTap={{ scale: 0.95 }} className="hidden md:block">
                       <Link
                         to="/admin"
                         className="header-action-btn inline-flex items-center justify-center"
@@ -872,7 +875,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
               <Link
                 to="/profile"
                 onClick={handleProfileClick}
-                className="header-action-btn items-center gap-2 px-3"
+                className="header-action-btn mobile-header-action-btn items-center gap-2 px-3"
                 aria-label="پروفایل کاربر"
               >
                 <UserCircle2 className="h-5 w-5" />
@@ -881,7 +884,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={toggleTheme}
-                className="header-action-btn"
+                className="header-action-btn mobile-header-action-btn"
                 aria-label="تغییر تم"
               >
                 {isDark ? (
@@ -897,7 +900,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
                   setIsMenuOpen((prev) => !prev);
                   setIsNotificationsOpen(false);
                 }}
-                className="header-action-btn min-[1281px]:hidden"
+                className="header-action-btn mobile-header-action-btn min-[1281px]:hidden"
                 aria-label="منو"
               >
                 {isMenuOpen ? (
@@ -1021,6 +1024,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
       <Suspense fallback={null}>
         <MobileMenu
           isOpen={isMenuOpen}
+          isMobile={isMobile}
           menuItems={menuItems}
           activeMenuItem={activeMenuItem}
           isAuthenticated={isAuthenticated}
@@ -1033,11 +1037,6 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
             setIsMenuOpen(false);
             setIsAllNotificationsOpen(false);
             setIsNotificationsOpen(true);
-          }}
-          onProfileClick={(event) => {
-            setIsMenuOpen(false);
-            setIsNotificationsOpen(false);
-            handleProfileClick(event);
           }}
         />
       </Suspense>

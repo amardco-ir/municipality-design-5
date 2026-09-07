@@ -12,6 +12,7 @@ import { RecentActivitiesSection } from "./components/RecentActivitiesSection";
 import { FaqSection } from "./components/FaqSection";
 import { Footer } from "./components/Footer";
 import { ScrollToTop } from "./components/ScrollToTop";
+import { MobileBottomNavigation } from "./components/MobileBottomNavigation";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuthModal } from "./components/AuthContext";
 
@@ -53,6 +54,12 @@ function ConditionalFooter() {
     return null;
   }
   return <Footer />;
+}
+
+function ConditionalMobileBottomNavigation() {
+  const location = useLocation();
+  if (location.pathname !== "/") return null;
+  return <MobileBottomNavigation />;
 }
 
 export default function App() {
@@ -229,6 +236,7 @@ export default function App() {
         </Routes>
       </Suspense>
       <ConditionalFooter />
+      <ConditionalMobileBottomNavigation />
       <ScrollToTop />
     </div>
   );

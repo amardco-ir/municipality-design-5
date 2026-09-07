@@ -7,18 +7,18 @@ import {
   storeAuthTokens,
 } from "../utils/authStorage";
 
-const DEFAULT_API_BASE_URL = "http://192.168.10.3:6300";
-const DEFAULT_DOTNET10_API_BASE_URL = "http://192.168.10.3:6500";
-const DEFAULT_PAYMENT_API_BASE_URL = "http://192.168.10.3:6500";
-const DEFAULT_RENOVATION_BILL_API_BASE_URL = "http://192.168.10.3:5100";
-const DEFAULT_SMS_API_BASE_URL = "http://192.168.10.3:6500";
+// const DEFAULT_API_BASE_URL = "http://192.168.10.3:6300";
+// const DEFAULT_DOTNET10_API_BASE_URL = "http://192.168.10.3:6500";
+// const DEFAULT_PAYMENT_API_BASE_URL = "http://192.168.10.3:6500";
+// const DEFAULT_RENOVATION_BILL_API_BASE_URL = "http://192.168.10.3:5100";
+// const DEFAULT_SMS_API_BASE_URL = "http://192.168.10.3:6500";
 
-// const DEFAULT_API_BASE_URL = "https://shahrvandyar.com/api-old";
-// const DEFAULT_DOTNET10_API_BASE_URL = "https://shahrvandyar.com/api-core";
-// const DEFAULT_PAYMENT_API_BASE_URL = "https://shahrvandyar.com/api-core";
-// const DEFAULT_RENOVATION_BILL_API_BASE_URL =
-//   "https://shahrvandyar.com/api-shahrsazi";
-// const DEFAULT_SMS_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_API_BASE_URL = "https://shahrvandyar.com/api-old";
+const DEFAULT_DOTNET10_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_PAYMENT_API_BASE_URL = "https://shahrvandyar.com/api-core";
+const DEFAULT_RENOVATION_BILL_API_BASE_URL =
+  "https://shahrvandyar.com/api-shahrsazi";
+const DEFAULT_SMS_API_BASE_URL = "https://shahrvandyar.com/api-core";
 
 // const DEFAULT_API_BASE_URL = "http://172.16.1.16:6102";
 // const DEFAULT_DOTNET10_API_BASE_URL = "http://172.16.1.16:6101";

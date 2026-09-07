@@ -68,7 +68,6 @@ export function Footer() {
     support: [
       { label: "راهنما", href: "/guide" },
       { label: "سوالات متداول", href: "/faq" },
-      { label: "پشتیبانی", href: "/support" },
       { label: "تماس با ما", href: "/contact" },
     ],
   };
