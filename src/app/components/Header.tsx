@@ -788,7 +788,7 @@ export function Header({ isDark, toggleTheme }: HeaderProps) {
               ) : null}
               {displayedHeaderTitle ? (
                 <div className="min-w-0">
-                  <h1 className="max-w-[9rem] truncate text-sm font-bold text-white sm:max-w-[13rem] md:max-w-none md:text-lg md:text-foreground">
+                  <h1 className="max-w-[9rem] truncate text-sm font-bold text-foreground sm:max-w-[13rem] md:max-w-none md:text-lg">
                     {displayedHeaderTitle}
                   </h1>
                   <div className="hidden items-center gap-2 sm:flex">

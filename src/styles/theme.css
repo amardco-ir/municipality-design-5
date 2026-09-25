@@ -323,31 +323,16 @@
     transform: translateY(-1px);
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 1280px) {
     .mobile-header-shell {
-      border-color: color-mix(in oklab, white 18%, transparent);
-      background:
-        radial-gradient(circle at 14% -20%, rgba(255, 255, 255, 0.22), transparent 38%),
-        linear-gradient(132deg, var(--primary-gradient-1), var(--primary-gradient-2) 58%, var(--primary-gradient-3));
-      box-shadow: 0 15px 34px color-mix(in oklab, var(--primary) 30%, transparent);
+      border-color: color-mix(in oklab, var(--primary) 28%, var(--glass-border));
+      box-shadow: 0 15px 34px color-mix(in oklab, var(--primary) 20%, transparent);
     }
 
     .mobile-header-shell::before {
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+      background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 72%, white), transparent);
     }
 
-    .mobile-header-action-btn {
-      border-color: rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.13);
-      color: #ffffff;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-
-    .mobile-header-action-btn:hover {
-      border-color: rgba(255, 255, 255, 0.35);
-      background: rgba(255, 255, 255, 0.22);
-    }
   }
 
   .section-decor {

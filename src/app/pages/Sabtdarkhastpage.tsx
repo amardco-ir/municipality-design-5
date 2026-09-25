@@ -31,7 +31,10 @@ import {
 import { SabtdarkhastFormPrimary } from "./sabtdarkhast/SabtdarkhastFormPrimary";
 import { SabtdarkhastFormSecondary } from "./sabtdarkhast/SabtdarkhastFormSecondary";
 import { SuccessScreen } from "./sabtdarkhast/SuccessScreen";
-import { UploadStep } from "./sabtdarkhast/UploadStep";
+import {
+  UploadStep,
+  type UploadDocuments,
+} from "./sabtdarkhast/UploadStep";
 import {
   ApplicantFormState,
   BuyerFormState,
@@ -1744,7 +1747,17 @@ export function SabtDarkhastPage({
     }
   };
 
-  const handleUploadSubmit = async (files: File[]) => {
+  const handleUploadSubmit = async (documents: UploadDocuments) => {
+    if (!documents.nationalCard || !documents.propertyDeed) {
+      setUploadError("بارگذاری کارت ملی و سند ملک الزامی است.");
+      return;
+    }
+
+    const files = [
+      documents.nationalCard,
+      documents.propertyDeed,
+      ...documents.otherFiles,
+    ];
     const token = normalizeAuthToken(localStorage.getItem("auth-token"));
     const shod = toNumber(registeredRequestId || requestForm.id);
     const shop = getCurrentShopNumber();
