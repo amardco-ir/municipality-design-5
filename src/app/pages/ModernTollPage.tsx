@@ -22,7 +22,7 @@ import {
   LoaderCircle,
   Wallet,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   guildCodeFields,
   type RenewalCodeKey,
@@ -39,8 +39,6 @@ import { apiFetch, renovationBillApiFetch } from "../data/api";
 import { AUTH_TOKEN_KEY } from "../utils/authStorage";
 import {
   extractPaymentIdentifiers,
-  redirectToPaymentGateway,
-  requestPaymentToken,
   type PaymentIdentifiers,
 } from "../services/paymentService";
 import {
@@ -845,6 +843,7 @@ const mapOwner = (owner: any, index: number): OwnerItem => {
 };
 
 export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
+  const navigate = useNavigate();
   const [propertyItems, setPropertyItems] = useState<LocalPropertyItem[]>([]);
   const [selectedProperty, setSelectedProperty] =
     useState<LocalPropertyItem | null>(null);
@@ -879,7 +878,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const [paymentErrorBillIndex, setPaymentErrorBillIndex] = useState<
     number | null
   >(null);
-  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const [isRenovationLoading, setIsRenovationLoading] = useState(true);
   const [renovationBills, setRenovationBills] = useState<RenovationBill[]>([]);
   const [renovationServiceBill, setRenovationServiceBill] =
@@ -887,9 +885,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const [renovationServices, setRenovationServices] = useState<LabelValue[]>(
     [],
   );
-  const [payingBillIndex, setPayingBillIndex] = useState<number | null>(null);
   const renovationRequestIdRef = useRef(0);
-  const paymentAttemptIdRef = useRef(0);
   const propertyCodeSetRef = useRef<Set<string>>(new Set());
 
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -1063,7 +1059,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   // هندلر کلیک روی یک ملک از لیست زیرمجموعه
   const selectPropertyFromList = (property: LocalPropertyItem) => {
     renovationRequestIdRef.current += 1;
-    paymentAttemptIdRef.current += 1;
     setSearchInputs(property.codes);
     setSelectedProperty(property);
     setOwners([]);
@@ -1074,7 +1069,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     setHistoryItems([]);
     setPaymentIdentifiers(null);
     setPaymentError("");
-    setIsPaymentLoading(false);
     setIsRenovationLoading(false);
     setError("");
   };
@@ -1239,8 +1233,6 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   }, [token]);
 
   const handleSearch = async () => {
-    paymentAttemptIdRef.current += 1;
-    setIsPaymentLoading(false);
     setError("");
     setOwners([]);
     setFeesRight([]);
@@ -1272,8 +1264,7 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
     }
   };
 
-  const handlePayment = async (bill?: RenovationBill, billIndex = 0) => {
-    if (isPaymentLoading) return;
+  const handlePayment = (bill?: RenovationBill, billIndex = 0) => {
     if (!token) {
       setPaymentErrorBillIndex(billIndex);
       setPaymentError("برای پرداخت باید وارد حساب کاربری شوید.");
@@ -1292,27 +1283,26 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
 
     setPaymentError("");
     setPaymentErrorBillIndex(null);
-    setIsPaymentLoading(true);
-    setPayingBillIndex(billIndex);
-    const attemptId = ++paymentAttemptIdRef.current;
-    try {
-      const { refId, redirectUrl } = await requestPaymentToken(
-        identifiers,
-        token,
-      );
-      if (attemptId !== paymentAttemptIdRef.current) return;
-      redirectToPaymentGateway(refId, redirectUrl);
-    } catch (paymentRequestError) {
-      if (attemptId !== paymentAttemptIdRef.current) return;
-      setPaymentError(
-        paymentRequestError instanceof Error
-          ? paymentRequestError.message
-          : "شروع عملیات پرداخت انجام نشد.",
-      );
-      setPaymentErrorBillIndex(billIndex);
-      setIsPaymentLoading(false);
-      setPayingBillIndex(null);
-    }
+    if (!bill) return;
+
+    const receiptParams = new URLSearchParams({
+      Success: "true",
+      ParvandeNo: String(bill.ParvandeNo ?? ""),
+      IdMalek: String(bill.IdMalek ?? ""),
+      Year: String(bill.Year ?? ""),
+      ShenaseGhabz: identifiers.billId,
+      ShenasePardakht: identifiers.paymentId,
+      CodeNosazi: bill.CodeNosazi ?? "",
+      NameOwner: bill.NameOwner ?? "",
+      Address: bill.Address ?? "",
+      Description: bill.Description ?? "",
+      DateSodor: bill.DateSodor ?? "",
+      Price: String(bill.Price ?? ""),
+      DelayedPrice: String(bill.DelayedPrice ?? ""),
+      PaymentStatus: String(Boolean(bill.PaymentStatus)),
+    });
+
+    navigate(`/Receipt?${receiptParams.toString()}`);
   };
 
   const HelpButton = ({ title, desc }: { title: string; desc: string }) => (
@@ -1331,30 +1321,26 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
   const servicePaymentIdentifiers = renovationServiceBill
     ? extractPaymentIdentifiers(renovationServiceBill)
     : null;
-  const isCurrentPaymentLoading = isPaymentLoading && payingBillIndex === 0;
-  const isServicePaymentLoading = isPaymentLoading && payingBillIndex === 1;
   const canStartPayment = Boolean(
     token &&
     paymentIdentifiers &&
-    !isPaymentLoading &&
     !renovationBills[0]?.PaymentStatus,
   );
   const canStartServicePayment = Boolean(
     token &&
     servicePaymentIdentifiers &&
-    !isPaymentLoading &&
     !renovationServiceBill?.PaymentStatus,
   );
   const paymentHint = !token
     ? "برای پرداخت، ابتدا وارد حساب کاربری شوید."
     : !paymentIdentifiers
       ? "شناسه قبض و شناسه پرداخت برای این پرونده دریافت نشده است."
-      : "پس از دریافت توکن، به درگاه امن آسان‌پرداخت منتقل می‌شوید.";
+      : "پیش از ورود به درگاه، اطلاعات کامل قبض را بررسی و تأیید می‌کنید.";
   const servicePaymentHint = !token
     ? "برای پرداخت، ابتدا وارد حساب کاربری شوید."
     : !servicePaymentIdentifiers
       ? "شناسه قبض و شناسه پرداخت برای این خدمت دریافت نشده است."
-      : "پس از دریافت توکن، به درگاه امن آسان‌پرداخت منتقل می‌شوید.";
+      : "پیش از ورود به درگاه، اطلاعات کامل قبض را بررسی و تأیید می‌کنید.";
   const currentPaymentError = paymentErrorBillIndex === 0 ? paymentError : "";
   const servicePaymentError = paymentErrorBillIndex === 1 ? paymentError : "";
 
@@ -1711,19 +1697,12 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                         type="button"
                         onClick={() => handlePayment(renovationBills[0], 0)}
                         disabled={!canStartPayment}
-                        aria-busy={isPaymentLoading}
                         className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted-foreground/35 disabled:shadow-none sm:w-auto"
                       >
-                        {isCurrentPaymentLoading ? (
-                          <LoaderCircle className="h-5 w-5 animate-spin" />
-                        ) : (
-                          <CreditCard className="h-5 w-5" />
-                        )}
+                        <CreditCard className="h-5 w-5" />
                         {renovationBills[0]?.PaymentStatus
                           ? "پرداخت شده"
-                          : isCurrentPaymentLoading
-                            ? "در حال اتصال به درگاه..."
-                            : "پرداخت عوارض"}
+                          : "پرداخت عوارض"}
                       </button>
                     </div>
 
@@ -1975,19 +1954,12 @@ export function ModernTollPage({ isDark, toggleTheme }: ModernTollPageProps) {
                       type="button"
                       onClick={() => handlePayment(renovationServiceBill, 1)}
                       disabled={!canStartServicePayment}
-                      aria-busy={isServicePaymentLoading}
                       className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted-foreground/35 disabled:shadow-none sm:w-auto"
                     >
-                      {isServicePaymentLoading ? (
-                        <LoaderCircle className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <CreditCard className="h-5 w-5" />
-                      )}
+                      <CreditCard className="h-5 w-5" />
                       {renovationServiceBill.PaymentStatus
                         ? "پرداخت شده"
-                        : isServicePaymentLoading
-                          ? "در حال اتصال به درگاه..."
-                          : "پرداخت خدمات"}
+                        : "پرداخت خدمات"}
                     </button>
                   </div>
 

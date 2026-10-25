@@ -49,7 +49,8 @@ function ConditionalFooter() {
   const location = useLocation();
   if (
     location.pathname === "/admin" ||
-    location.pathname === "/payment-result"
+    location.pathname === "/payment-result" ||
+    location.pathname.toLocaleLowerCase("en-US") === "/receipt"
   ) {
     return null;
   }
@@ -222,6 +223,7 @@ export default function App() {
             }
           />
           <Route path="/payment-result" element={<PaymentResultPage />} />
+          <Route path="/Receipt" element={<ReceiptPage />} />
           <Route
             path="*"
             element={
@@ -307,6 +309,11 @@ const ModernTollPage = lazy(() =>
 const PaymentResultPage = lazy(() =>
   import("./pages/PaymentResultPage").then((module) => ({
     default: module.PaymentResultPage,
+  })),
+);
+const ReceiptPage = lazy(() =>
+  import("./pages/ReceiptPage").then((module) => ({
+    default: module.ReceiptPage,
   })),
 );
 const AdminPanel = lazy(() => import("./pages/Adminpanel"));

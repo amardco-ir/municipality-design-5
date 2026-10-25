@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
   Download,
   Home,
   LoaderCircle,
+  Printer,
   ReceiptText,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import { downloadPaymentReceipt } from "../data/paymentReceipt";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "../components/ui/dialog";
 
 const receiptIdParamNames = [
   "id",
@@ -43,120 +50,94 @@ const getReceiptId = (params: URLSearchParams) =>
     .map((name) => params.get(name)?.trim())
     .find((value): value is string => Boolean(value));
 
-const createPrintWindow = () => {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) return null;
-
-  printWindow.document.title = "آماده‌سازی سابقه پرداخت";
-  printWindow.document.documentElement.dir = "rtl";
-  printWindow.document.body.style.cssText =
-    "margin:0;display:grid;place-items:center;min-height:100vh;background:#071712;color:#f4fbf8;font-family:Tahoma,Arial,sans-serif";
-
-  const loadingMessage = printWindow.document.createElement("p");
-  loadingMessage.textContent = "در حال آماده‌سازی پیش‌نمایش چاپ...";
-  loadingMessage.style.fontSize = "14px";
-  printWindow.document.body.appendChild(loadingMessage);
-
-  return printWindow;
-};
-
-const showPrintPreview = (
-  printWindow: Window,
-  blob: Blob,
-  filename: string,
-) => {
-  const url = URL.createObjectURL(blob);
-  const previewDocument = printWindow.document;
-  previewDocument.title = "سابقه پرداخت";
-  previewDocument.body.replaceChildren();
-  previewDocument.body.style.cssText =
-    "margin:0;height:100vh;overflow:hidden;background:#1f2937;font-family:Tahoma,Arial,sans-serif";
-
-  const toolbar = previewDocument.createElement("div");
-  toolbar.style.cssText =
-    "height:56px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 16px;background:#0c211b;border-bottom:1px solid #24483f";
-
-  const printButton = previewDocument.createElement("button");
-  printButton.type = "button";
-  printButton.textContent = "چاپ";
-  printButton.style.cssText =
-    "height:38px;padding:0 24px;border:0;border-radius:10px;background:#36c3b2;color:#06201a;font:700 14px Tahoma,Arial,sans-serif;cursor:pointer";
-
-  const downloadLink = previewDocument.createElement("a");
-  downloadLink.href = url;
-  downloadLink.download = filename;
-  downloadLink.textContent = "دانلود PDF";
-  downloadLink.style.cssText =
-    "height:38px;box-sizing:border-box;display:inline-flex;align-items:center;padding:0 24px;border:1px solid #36c3b2;border-radius:10px;color:#f4fbf8;text-decoration:none;font:700 14px Tahoma,Arial,sans-serif";
-
-  const previewFrame = previewDocument.createElement("iframe");
-  previewFrame.title = "پیش‌نمایش سابقه پرداخت";
-  previewFrame.src = url;
-  previewFrame.style.cssText =
-    "display:block;width:100%;height:calc(100vh - 56px);border:0;background:#ffffff";
-
-  const printPdf = () => {
-    printWindow.focus();
-    try {
-      previewFrame.contentWindow?.focus();
-      previewFrame.contentWindow?.print();
-    } catch {
-      printWindow.print();
-    }
-  };
-
-  printButton.addEventListener("click", printPdf);
-  previewFrame.addEventListener(
-    "load",
-    () => printWindow.setTimeout(printPdf, 350),
-    { once: true },
-  );
-  printWindow.addEventListener(
-    "beforeunload",
-    () => URL.revokeObjectURL(url),
-    { once: true },
-  );
-
-  toolbar.append(printButton, downloadLink);
-  previewDocument.body.append(toolbar, previewFrame);
-};
-
 export function PaymentResultPage() {
   const [searchParams] = useSearchParams();
   const isSuccess = isSuccessfulPayment(searchParams);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [preview, setPreview] = useState<{
+    url: string;
+    filename: string;
+  } | null>(null);
+  const [isPreviewReady, setIsPreviewReady] = useState(false);
+  const [printError, setPrintError] = useState("");
+  const previewFrameRef = useRef<HTMLIFrameElement>(null);
+  const receiptButtonRef = useRef<HTMLButtonElement>(null);
+  const downloadControllerRef = useRef<AbortController | null>(null);
+  const previewUrl = preview?.url;
+
+  useEffect(() => {
+    return () => downloadControllerRef.current?.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  const handlePreviewOpenChange = (open: boolean) => {
+    setIsPreviewOpen(open);
+    if (!open) {
+      downloadControllerRef.current?.abort();
+      downloadControllerRef.current = null;
+      setIsDownloading(false);
+      setPreview(null);
+      setIsPreviewReady(false);
+      setPrintError("");
+    }
+  };
+
+  const handlePrintReceipt = () => {
+    setPrintError("");
+    try {
+      const frameWindow = previewFrameRef.current?.contentWindow;
+      if (!frameWindow) return;
+      frameWindow.focus();
+      frameWindow.print();
+    } catch {
+      setPrintError(
+        "چاپ مستقیم در این مرورگر امکان‌پذیر نیست؛ فایل PDF را دانلود و چاپ کنید.",
+      );
+    }
+  };
 
   const handleDownloadPaymentReceipt = async () => {
+    if (downloadControllerRef.current) return;
     const receiptId = getReceiptId(searchParams);
     if (!receiptId) {
       setDownloadError("شناسه تراکنش برای دریافت سابقه پرداخت موجود نیست.");
       return;
     }
 
-    const printWindow = createPrintWindow();
-    if (!printWindow) {
-      setDownloadError(
-        "برای نمایش صفحه چاپ، اجازه بازشدن پنجره جدید را در مرورگر فعال کنید.",
-      );
-      return;
-    }
-
+    const controller = new AbortController();
+    downloadControllerRef.current = controller;
+    setIsPreviewOpen(true);
     setIsDownloading(true);
     setDownloadError("");
+    setPrintError("");
+    setIsPreviewReady(false);
 
     try {
-      const { blob, filename } = await downloadPaymentReceipt(receiptId);
-      showPrintPreview(printWindow, blob, filename);
+      const { blob, filename } = await downloadPaymentReceipt(
+        receiptId,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      setPreview({ url: URL.createObjectURL(blob), filename });
     } catch (error) {
-      printWindow.close();
+      if (controller.signal.aborted) return;
+      setIsPreviewOpen(false);
       setDownloadError(
         error instanceof Error
           ? error.message
           : "دانلود سابقه پرداخت انجام نشد.",
       );
     } finally {
-      setIsDownloading(false);
+      if (downloadControllerRef.current === controller) {
+        downloadControllerRef.current = null;
+        if (!controller.signal.aborted) setIsDownloading(false);
+      }
     }
   };
 
@@ -210,6 +191,7 @@ export function PaymentResultPage() {
             </Link>
             {isSuccess ? (
               <button
+                ref={receiptButtonRef}
                 type="button"
                 onClick={handleDownloadPaymentReceipt}
                 disabled={isDownloading}
@@ -242,6 +224,69 @@ export function PaymentResultPage() {
           ) : null}
         </div>
       </section>
+
+      <Dialog open={isPreviewOpen} onOpenChange={handlePreviewOpenChange}>
+        <DialogContent
+          dir="rtl"
+          className="flex h-[90svh] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden border-[#24483f] bg-[#0c211b] p-0 text-[#f4fbf8] sm:max-w-5xl"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            receiptButtonRef.current?.focus();
+          }}
+        >
+          <div className="shrink-0 border-b border-[#24483f] px-5 pb-4 pt-12 sm:px-6">
+            <DialogTitle className="text-right text-lg font-bold">
+              پیش‌نمایش سابقه پرداخت
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              مشاهده، چاپ و دانلود فایل PDF سابقه پرداخت
+            </DialogDescription>
+            {preview ? (
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handlePrintReceipt}
+                  disabled={!isPreviewReady}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#36c3b2] px-5 text-sm font-bold text-[#06201a] transition-colors hover:bg-[#4bd3c2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78e1d4] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <Printer className="h-4 w-4" />
+                  چاپ
+                </button>
+                <a
+                  href={preview.url}
+                  download={preview.filename}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#36c3b2] px-5 text-sm font-bold transition-colors hover:bg-[#142e27] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78e1d4]"
+                >
+                  <Download className="h-4 w-4" />
+                  دانلود PDF
+                </a>
+              </div>
+            ) : null}
+            {printError ? (
+              <p role="alert" className="mt-3 text-sm leading-6 text-[#f3a0a7]">
+                {printError}
+              </p>
+            ) : null}
+          </div>
+          {preview ? (
+            <iframe
+              ref={previewFrameRef}
+              title="پیش‌نمایش سابقه پرداخت"
+              src={preview.url}
+              onLoad={() => setIsPreviewReady(true)}
+              className="min-h-0 w-full flex-1 border-0 bg-white"
+            />
+          ) : (
+            <div
+              role="status"
+              className="flex flex-1 flex-col items-center justify-center gap-4 px-5 text-sm text-[#9ab5ad]"
+            >
+              <LoaderCircle className="h-8 w-8 animate-spin text-[#36c3b2]" />
+              در حال آماده‌سازی پیش‌نمایش چاپ...
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
